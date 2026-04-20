@@ -79,13 +79,20 @@ func (h *PacienteHandler) Criar(w http.ResponseWriter, r *http.Request) {
 // GET /pacientes
 func (h *PacienteHandler) Listar(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
+	isAdmin := middleware.GetRole(r.Context()) == domain.RoleAdmin
+	mostrarTodos := r.URL.Query().Get("todos") == "true"
 
 	var (
 		pacientes []*domain.Paciente
 		err       error
 	)
 
-	pacientes, err = h.repo.ListByProfissional(r.Context(), userID)
+	// Define qual query executar baseando-se nas permissões e filtros
+	if isAdmin && mostrarTodos {
+		pacientes, err = h.repo.ListAll(r.Context())
+	} else {
+		pacientes, err = h.repo.ListByProfissional(r.Context(), userID)
+	}
 
 	if err != nil {
 		respondErro(w, "erro ao listar pacientes", http.StatusInternalServerError)

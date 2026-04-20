@@ -91,3 +91,75 @@ func (r *UsuarioRepository) ListAll(ctx context.Context) ([]*domain.Usuario, err
 
 	return usuarios, nil
 }
+
+func (r *UsuarioRepository) UpdateProfile(ctx context.Context, id int, nome, profissao string) error {
+	query := `
+		UPDATE usuarios 
+		SET nome = $1, profissao = $2 
+		WHERE id = $3`
+
+	commandTag, err := r.db.Exec(ctx, query, nome, profissao, id)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar perfil: %w", err)
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("usuário com id %d não encontrado", id)
+	}
+
+	return nil
+}
+
+func (r *UsuarioRepository) UpdatePassword(ctx context.Context, id int, novaSenhaHash string) error {
+	query := `
+        UPDATE usuarios 
+        SET senha_hash = $1 
+        WHERE id = $2`
+
+	commandTag, err := r.db.Exec(ctx, query, novaSenhaHash, id)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar senha: %w", err)
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("usuário com id %d não encontrado", id)
+	}
+
+	return nil
+}
+
+func (r *UsuarioRepository) UpdateSystemRoles(ctx context.Context, id int, role domain.Role, taxaComissao float64) error {
+	query := `
+        UPDATE usuarios 
+        SET role = $1, taxa_comissao_padrao = $2 
+        WHERE id = $3`
+
+	commandTag, err := r.db.Exec(ctx, query, role, taxaComissao, id)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar regras de sistema: %w", err)
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("usuário com id %d não encontrado", id)
+	}
+
+	return nil
+}
+
+func (r *UsuarioRepository) UpdateEmail(ctx context.Context, id int, novoEmail string) error {
+	query := `
+        UPDATE usuarios 
+        SET email = $1 
+        WHERE id = $2`
+
+	commandTag, err := r.db.Exec(ctx, query, novoEmail, id)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar email: %w", err)
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("usuário com id %d não encontrado", id)
+	}
+
+	return nil
+}
