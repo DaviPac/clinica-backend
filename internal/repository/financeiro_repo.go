@@ -39,6 +39,33 @@ func (r *FinanceiroRepository) ConfirmarAcerto(ctx context.Context, id int) erro
 	return err
 }
 
+func (r *FinanceiroRepository) ListAcertos(ctx context.Context) ([]*domain.AcertoComissao, error) {
+	query := `
+		SELECT id, profissional_id, periodo_referencia,
+			   valor_pago_a_clinica, data_pagamento, confirmado_pelo_admin, observacao
+		FROM acertos_comissao
+		ORDER BY data_pagamento DESC`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lista []*domain.AcertoComissao
+	for rows.Next() {
+		a := &domain.AcertoComissao{}
+		if err := rows.Scan(
+			&a.ID, &a.ProfissionalID, &a.PeriodoReferencia,
+			&a.ValorPagoAClinica, &a.DataPagamento, &a.ConfirmadoPeloAdmin, &a.Observacao,
+		); err != nil {
+			return nil, err
+		}
+		lista = append(lista, a)
+	}
+	return lista, rows.Err()
+}
+
 func (r *FinanceiroRepository) ListAcertosByProfissional(ctx context.Context, profissionalID int) ([]*domain.AcertoComissao, error) {
 	query := `
 		SELECT id, profissional_id, periodo_referencia,

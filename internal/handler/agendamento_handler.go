@@ -41,6 +41,15 @@ type criarAgendamentoRequest struct {
 // POST /agendamentos
 func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 	profissionalID := middleware.GetUserID(r.Context())
+	idQuery := r.URL.Query().Get("profissionalID")
+	if idQuery != "" {
+		parsedID, err := strconv.Atoi(idQuery)
+		if err != nil {
+			respondErro(w, "ID do profissional deve ser um número válido", http.StatusBadRequest)
+			return
+		}
+		profissionalID = parsedID
+	}
 
 	var req criarAgendamentoRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -144,20 +153,31 @@ func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 
 // GET /agendamentos?de=2025-01-01&ate=2025-01-31
 func (h *AgendamentoHandler) Listar(w http.ResponseWriter, r *http.Request) {
-	profissionalID := middleware.GetUserID(r.Context())
+	ctx := r.Context()
+	profissionalID := middleware.GetUserID(ctx)
+	isAdmin := middleware.GetRole(ctx) == domain.RoleAdmin
+	mostrarTodos := r.URL.Query().Get("todos") == "true"
 
 	de, ate := parseFiltrosPeriodo(r)
 
-	agendamentos, err := h.repo.ListByProfissional(r.Context(), profissionalID, de, ate)
+	var agendamentos []*domain.Agendamento
+	var err error
+
+	// Define qual query executar baseando-se nas permissões e filtros
+	if isAdmin && mostrarTodos {
+		agendamentos, err = h.repo.ListAll(ctx, de, ate)
+	} else {
+		agendamentos, err = h.repo.ListByProfissional(ctx, profissionalID, de, ate)
+	}
+
 	if err != nil {
 		respondErro(w, "erro ao listar agendamentos", http.StatusInternalServerError)
 		return
 	}
 
 	if agendamentos == nil {
-		agendamentos = []*domain.Agendamento{}
+		agendamentos = make([]*domain.Agendamento, 0)
 	}
-
 	respondJSON(w, agendamentos, http.StatusOK)
 }
 
@@ -187,8 +207,9 @@ func (h *AgendamentoHandler) AtualizarStatus(w http.ResponseWriter, r *http.Requ
 	}
 
 	agendamento, err := h.repo.FindByID(r.Context(), id)
-	if agendamento.ProfissionalID != middleware.GetUserID(r.Context()) {
+	if agendamento.ProfissionalID != middleware.GetUserID(r.Context()) && middleware.GetRole(r.Context()) != domain.RoleAdmin {
 		respondErro(w, "não autorizado", http.StatusForbidden)
+		return
 	}
 
 	if err := h.repo.UpdateStatus(r.Context(), id, body.Status); err != nil {
@@ -216,8 +237,9 @@ func (h *AgendamentoHandler) AtualizarPagamento(w http.ResponseWriter, r *http.R
 	}
 
 	agendamento, err := h.repo.FindByID(r.Context(), id)
-	if agendamento.ProfissionalID != middleware.GetUserID(r.Context()) {
+	if agendamento.ProfissionalID != middleware.GetUserID(r.Context()) && middleware.GetRole(r.Context()) != domain.RoleAdmin {
 		respondErro(w, "não autorizado", http.StatusForbidden)
+		return
 	}
 
 	if err := h.repo.UpdatePagamento(r.Context(), id, body.Pago); err != nil {
@@ -231,6 +253,25 @@ func (h *AgendamentoHandler) AtualizarPagamento(w http.ResponseWriter, r *http.R
 // DELETE /agendamentos/recorrencia/{groupID}
 func (h *AgendamentoHandler) CancelarRecorrencia(w http.ResponseWriter, r *http.Request) {
 	groupID := chi.URLParam(r, "groupID")
+	if groupID == "" {
+		respondErro(w, "ID do grupo não pode ser vazio", http.StatusBadRequest)
+		return
+	}
+	professionalID := middleware.GetUserID(r.Context())
+	role := middleware.GetRole(r.Context())
+
+	// Regra de autorização
+	if role != domain.RoleAdmin {
+		isOwner, err := h.repo.VerificarOwnership(r.Context(), groupID, professionalID)
+		if err != nil {
+			respondErro(w, "erro interno ao verificar permissões", http.StatusInternalServerError)
+			return
+		}
+		if !isOwner {
+			respondErro(w, "nao autorizado", http.StatusForbidden)
+			return
+		}
+	}
 
 	if err := h.repo.CancelarRecorrencia(r.Context(), groupID); err != nil {
 		respondErro(w, "erro ao cancelar recorrência", http.StatusInternalServerError)

@@ -56,9 +56,17 @@ func (h *ServicoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 // GET /servicos
 func (h *ServicoHandler) Listar(w http.ResponseWriter, r *http.Request) {
 	profissionalID := middleware.GetUserID(r.Context())
+	mostrarTodos := r.URL.Query().Get("todos") == "true" && middleware.GetRole(r.Context()) == domain.RoleAdmin
 	apenasAtivos := r.URL.Query().Get("inativos") != "true"
 
-	servicos, err := h.repo.ListByProfissional(r.Context(), profissionalID, apenasAtivos)
+	var servicos []*domain.Servico
+	var err error
+	if mostrarTodos {
+		servicos, err = h.repo.ListAll(r.Context(), apenasAtivos)
+	} else {
+		servicos, err = h.repo.ListByProfissional(r.Context(), profissionalID, apenasAtivos)
+	}
+
 	if err != nil {
 		respondErro(w, "erro ao listar serviços", http.StatusInternalServerError)
 		return

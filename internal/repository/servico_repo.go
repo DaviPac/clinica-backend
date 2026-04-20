@@ -38,6 +38,30 @@ func (r *ServicoRepository) FindByID(ctx context.Context, id int) (*domain.Servi
 	return s, err
 }
 
+func (r *ServicoRepository) ListAll(ctx context.Context, apenasAtivos bool) ([]*domain.Servico, error) {
+	query := `
+		SELECT id, profissional_id, nome, valor_atual, ativo
+		FROM servicos
+		WHERE ($1 = false OR ativo = true)
+		ORDER BY nome`
+
+	rows, err := r.db.Query(ctx, query, apenasAtivos)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lista []*domain.Servico
+	for rows.Next() {
+		s := &domain.Servico{}
+		if err := rows.Scan(&s.ID, &s.ProfissionalID, &s.Nome, &s.ValorAtual, &s.Ativo); err != nil {
+			return nil, err
+		}
+		lista = append(lista, s)
+	}
+	return lista, rows.Err()
+}
+
 // Lista serviços do próprio profissional (ativos por padrão)
 func (r *ServicoRepository) ListByProfissional(ctx context.Context, profissionalID int, apenasAtivos bool) ([]*domain.Servico, error) {
 	query := `

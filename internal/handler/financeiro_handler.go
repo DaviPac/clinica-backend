@@ -23,6 +23,15 @@ func NewFinanceiroHandler(repo *repository.FinanceiroRepository) *FinanceiroHand
 // POST /financeiro/acertos  (profissional registra o pagamento à clínica)
 func (h *FinanceiroHandler) CriarAcerto(w http.ResponseWriter, r *http.Request) {
 	profissionalID := middleware.GetUserID(r.Context())
+	idQuery := r.URL.Query().Get("profissional_id")
+	if idQuery != "" {
+		parsedID, err := strconv.Atoi(idQuery)
+		if err != nil {
+			respondErro(w, "ID do profissional deve ser um número válido", http.StatusBadRequest)
+			return
+		}
+		profissionalID = parsedID
+	}
 
 	var body struct {
 		PeriodoReferencia string  `json:"periodo_referencia"` // "YYYY-MM"
@@ -72,10 +81,60 @@ func (h *FinanceiroHandler) ConfirmarAcerto(w http.ResponseWriter, r *http.Reque
 
 // GET /financeiro/acertos  (profissional vê os próprios; admin filtra por ?profissional_id=)
 func (h *FinanceiroHandler) ListarAcertos(w http.ResponseWriter, r *http.Request) {
-	role := middleware.GetRole(r.Context())
-	userID := middleware.GetUserID(r.Context())
+	ctx := r.Context()
+	role := middleware.GetRole(ctx)
+	userID := middleware.GetUserID(ctx)
 
-	profissionalID := userID
+	var profissionalID int
+	var listarTodos bool
+
+	// 1. Definição da lógica de permissões e filtros
+	if role == domain.RoleAdmin {
+		if pid := r.URL.Query().Get("profissional_id"); pid != "" {
+			id, err := strconv.Atoi(pid)
+			if err != nil || id <= 0 {
+				respondErro(w, "profissional_id inválido", http.StatusBadRequest)
+				return
+			}
+			profissionalID = id
+		} else {
+			listarTodos = true
+		}
+	} else {
+		// Se não é admin, força a ver apenas os próprios acertos
+		profissionalID = userID
+	}
+
+	// 2. Declaração sem alocação prévia
+	var acertos []*domain.AcertoComissao
+	var err error
+
+	// 3. Busca no banco de dados
+	if listarTodos {
+		acertos, err = h.repo.ListAcertos(ctx)
+	} else {
+		acertos, err = h.repo.ListAcertosByProfissional(ctx, profissionalID)
+	}
+
+	// 4. Tratamento de erro centralizado (DRY)
+	if err != nil {
+		// TODO: Idealmente, logar o 'err' internamente aqui antes de responder ao cliente
+		respondErro(w, "erro ao listar acertos", http.StatusInternalServerError)
+		return
+	}
+
+	// 5. Garantir que um slice vazio [] seja retornado no JSON em vez de null
+	if acertos == nil {
+		acertos = []*domain.AcertoComissao{}
+	}
+
+	respondJSON(w, acertos, http.StatusOK)
+}
+
+// GET /financeiro/saldo?periodo=2025-01
+func (h *FinanceiroHandler) SaldoDevido(w http.ResponseWriter, r *http.Request) {
+	profissionalID := middleware.GetUserID(r.Context())
+	role := middleware.GetRole(r.Context())
 	if role == domain.RoleAdmin {
 		if pid := r.URL.Query().Get("profissional_id"); pid != "" {
 			id, err := strconv.Atoi(pid)
@@ -87,21 +146,6 @@ func (h *FinanceiroHandler) ListarAcertos(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	acertos, err := h.repo.ListAcertosByProfissional(r.Context(), profissionalID)
-	if err != nil {
-		respondErro(w, "erro ao listar acertos", http.StatusInternalServerError)
-		return
-	}
-	if acertos == nil {
-		acertos = []*domain.AcertoComissao{}
-	}
-
-	respondJSON(w, acertos, http.StatusOK)
-}
-
-// GET /financeiro/saldo?periodo=2025-01
-func (h *FinanceiroHandler) SaldoDevido(w http.ResponseWriter, r *http.Request) {
-	profissionalID := middleware.GetUserID(r.Context())
 	periodo := r.URL.Query().Get("periodo")
 	if periodo == "" {
 		periodo = repository.PeriodoDe(time.Now())

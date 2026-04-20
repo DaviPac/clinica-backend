@@ -84,6 +84,30 @@ func (r *AgendamentoRepository) FindByID(ctx context.Context, id int) (*domain.A
 	return a, err
 }
 
+// Lista com filtro opcional de período
+func (r *AgendamentoRepository) ListAll(
+	ctx context.Context,
+	de, ate *time.Time,
+) ([]*domain.Agendamento, error) {
+	query := `
+		SELECT id, paciente_id, profissional_id, servico_id,
+			   data_hora_inicio, data_hora_fim,
+			   valor_combinado, percentual_comissao_momento,
+			   status, pago_pelo_paciente, recorrencia_group_id, criado_em
+		FROM agendamentos
+		WHERE ($1::timestamptz IS NULL OR data_hora_inicio >= $1)
+		  AND ($2::timestamptz IS NULL OR data_hora_inicio <= $2)
+		ORDER BY data_hora_inicio`
+
+	rows, err := r.db.Query(ctx, query, de, ate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanAgendamentos(rows)
+}
+
 // Lista por profissional com filtro opcional de período
 func (r *AgendamentoRepository) ListByProfissional(
 	ctx context.Context,
@@ -137,6 +161,20 @@ func (r *AgendamentoRepository) CancelarRecorrencia(ctx context.Context, groupID
 		groupID,
 	)
 	return err
+}
+
+func (r *AgendamentoRepository) VerificarOwnership(ctx context.Context, groupID string, profissionalID int) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM agendamentos
+			WHERE recorrencia_group_id = $1 
+			  AND profissional_id = $2
+		)`
+
+	var isOwner bool
+	err := r.db.QueryRow(ctx, query, groupID, profissionalID).Scan(&isOwner)
+
+	return isOwner, err
 }
 
 // Usado para verificar conflito de horário antes de agendar
