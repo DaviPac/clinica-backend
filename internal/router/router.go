@@ -14,7 +14,7 @@ import (
 func New(db *pgxpool.Pool) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:4200"}, // Exemplo para desenvolvimento (React/Vue/Vite)
+		AllowedOrigins:   []string{"http://localhost:4200", "https://instituto-cin.vercel.app"}, // Exemplo para desenvolvimento (React/Vue/Vite)
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
