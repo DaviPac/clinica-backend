@@ -31,6 +31,20 @@ type criarPacienteRequest struct {
 // POST /pacientes
 func (h *PacienteHandler) Criar(w http.ResponseWriter, r *http.Request) {
 	profissionalID := middleware.GetUserID(r.Context())
+	isAdmin := middleware.GetRole(r.Context()) == domain.RoleAdmin
+	idQuery := r.URL.Query().Get("profissional_id")
+	if idQuery != "" {
+		if !isAdmin {
+			respondErro(w, "nao autorizado", http.StatusForbidden)
+			return
+		}
+		id, err := strconv.Atoi(idQuery)
+		if err != nil {
+			respondErro(w, "id deve ser numérico", http.StatusBadRequest)
+			return
+		}
+		profissionalID = id
+	}
 
 	var req criarPacienteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -81,6 +95,15 @@ func (h *PacienteHandler) Listar(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	isAdmin := middleware.GetRole(r.Context()) == domain.RoleAdmin
 	mostrarTodos := r.URL.Query().Get("todos") == "true"
+	idQuery := r.URL.Query().Get("profissional_id")
+	if idQuery != "" {
+		id, err := strconv.Atoi(idQuery)
+		if err != nil {
+			respondErro(w, "id deve ser numérico", http.StatusBadRequest)
+			return
+		}
+		userID = id
+	}
 
 	var (
 		pacientes []*domain.Paciente
