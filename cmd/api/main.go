@@ -12,8 +12,10 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Arquivo .env não encontrado, usando variáveis de ambiente do sistema")
+	if os.Getenv("RAILWAY_ENVIRONMENT") == "" {
+		if err := godotenv.Load(); err != nil {
+			log.Println("Arquivo .env não encontrado, usando variáveis de ambiente do sistema")
+		}
 	}
 
 	ctx := context.Background()

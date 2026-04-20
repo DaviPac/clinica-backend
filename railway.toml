@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+buildCommand = "go build -o app ./cmd/api"
+
+[deploy]
+startCommand = "./app"
+restartPolicyType = "on_failure"
