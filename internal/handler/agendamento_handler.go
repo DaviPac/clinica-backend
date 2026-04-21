@@ -30,7 +30,7 @@ type criarAgendamentoRequest struct {
 	PacienteID     int     `json:"paciente_id"`
 	ServicoID      int     `json:"servico_id"`
 	DataHoraInicio string  `json:"data_hora_inicio"` // RFC3339
-	DataHoraFim    string  `json:"data_hora_fim"`
+	DuracaoMinutos int     `json:"duracao_minutos"`
 	ValorCombinado float64 `json:"valor_combinado"`
 	// Recorrência opcional
 	Recorrente       bool `json:"recorrente"`
@@ -57,20 +57,19 @@ func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.DuracaoMinutos <= 0 {
+		respondErro(w, "duracao_minutos deve ser maior que zero", http.StatusBadRequest)
+		return
+	}
+
 	inicio, err := time.Parse(time.RFC3339, req.DataHoraInicio)
 	if err != nil {
 		respondErro(w, "data_hora_inicio inválida (use RFC3339)", http.StatusBadRequest)
 		return
 	}
-	fim, err := time.Parse(time.RFC3339, req.DataHoraFim)
-	if err != nil {
-		respondErro(w, "data_hora_fim inválida (use RFC3339)", http.StatusBadRequest)
-		return
-	}
-	if !fim.After(inicio) {
-		respondErro(w, "data_hora_fim deve ser após data_hora_inicio", http.StatusBadRequest)
-		return
-	}
+
+	duracao := time.Duration(req.DuracaoMinutos) * time.Minute
+	fim := inicio.Add(duracao)
 
 	// Verifica conflito de horário
 	conflito, err := h.repo.ExisteConflito(r.Context(), profissionalID, inicio, fim, nil)
@@ -120,7 +119,6 @@ func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	groupID := uuid.NewString()
-	duracao := fim.Sub(inicio)
 	var lote []*domain.Agendamento
 
 	for i := 0; i < req.TotalSessoes; i++ {
