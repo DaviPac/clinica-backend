@@ -14,7 +14,7 @@ CREATE TABLE usuarios (
 CREATE TABLE pacientes (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(150) NOT NULL,
-    cpf VARCHAR(14) UNIQUE NOT NULL,
+    cpf VARCHAR(14) UNIQUE,
     telefone VARCHAR(20),
     data_nascimento DATE,
     criado_em TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

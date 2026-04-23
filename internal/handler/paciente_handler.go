@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -23,7 +24,7 @@ func NewPacienteHandler(repo *repository.PacienteRepository) *PacienteHandler {
 
 type criarPacienteRequest struct {
 	Nome           string  `json:"nome"`
-	CPF            string  `json:"cpf"`
+	CPF            *string `json:"cpf"`
 	Telefone       *string `json:"telefone"`
 	DataNascimento *string `json:"data_nascimento"` // "YYYY-MM-DD"
 }
@@ -51,20 +52,27 @@ func (h *PacienteHandler) Criar(w http.ResponseWriter, r *http.Request) {
 		respondErro(w, "corpo inválido", http.StatusBadRequest)
 		return
 	}
-	if req.Nome == "" || req.CPF == "" {
-		respondErro(w, "nome e cpf são obrigatórios", http.StatusBadRequest)
+	if req.Nome == "" {
+		respondErro(w, "nome é obrigatório", http.StatusBadRequest)
 		return
 	}
 
+	if req.CPF != nil && strings.TrimSpace(*req.CPF) == "" {
+		req.CPF = nil
+	}
+
 	// Se CPF já existe, apenas vincula ao profissional
-	existente, err := h.repo.FindByCPF(r.Context(), req.CPF)
-	if err == nil {
-		if err := h.repo.VincularProfissional(r.Context(), existente.ID, profissionalID); err != nil {
-			respondErro(w, "erro ao vincular paciente", http.StatusInternalServerError)
+	if req.CPF != nil {
+		existente, err := h.repo.FindByCPF(r.Context(), *req.CPF)
+		if err == nil {
+			// Achou pelo CPF, vincula ao profissional!
+			if err := h.repo.VincularProfissional(r.Context(), existente.ID, profissionalID); err != nil {
+				respondErro(w, "erro ao vincular paciente", http.StatusInternalServerError)
+				return
+			}
+			respondJSON(w, existente, http.StatusOK)
 			return
 		}
-		respondJSON(w, existente, http.StatusOK)
-		return
 	}
 
 	p := &domain.Paciente{

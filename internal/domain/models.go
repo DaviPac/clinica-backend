@@ -27,7 +27,7 @@ type Usuario struct {
 type Paciente struct {
 	ID             int        `json:"id"`
 	Nome           string     `json:"nome"`
-	CPF            string     `json:"cpf"`
+	CPF            *string    `json:"cpf"`
 	Telefone       *string    `json:"telefone"`
 	DataNascimento *time.Time `json:"data_nascimento"`
 	CriadoEm       time.Time  `json:"criado_em"`
