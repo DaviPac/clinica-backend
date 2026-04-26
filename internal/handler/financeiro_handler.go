@@ -131,7 +131,7 @@ func (h *FinanceiroHandler) ListarAcertos(w http.ResponseWriter, r *http.Request
 	respondJSON(w, acertos, http.StatusOK)
 }
 
-// GET /financeiro/saldo?periodo=2025-01
+// GET /financeiro/saldo-devido?periodo=2025-01
 func (h *FinanceiroHandler) SaldoDevido(w http.ResponseWriter, r *http.Request) {
 	profissionalID := middleware.GetUserID(r.Context())
 	role := middleware.GetRole(r.Context())

@@ -69,7 +69,7 @@ func New(db *pgxpool.Pool) *chi.Mux {
 		// Financeiro — profissional
 		r.Post("/financeiro/acertos", financeiroHandler.CriarAcerto)
 		r.Get("/financeiro/acertos", financeiroHandler.ListarAcertos)
-		r.Get("/financeiro/saldo", financeiroHandler.SaldoDevido)
+		r.Get("/financeiro/saldo-devido", financeiroHandler.SaldoDevido)
 
 		// Financeiro + Admin exclusivo
 		r.Group(func(r chi.Router) {
