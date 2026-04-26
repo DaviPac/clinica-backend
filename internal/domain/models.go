@@ -41,6 +41,7 @@ type Servico struct {
 	Nome           string  `json:"nome"`
 	ValorAtual     float64 `json:"valor_atual"`
 	Ativo          bool    `json:"ativo"`
+	IsPacote       bool    `json:"is_pacote"`
 }
 
 // --- Agendamento ---
@@ -62,6 +63,7 @@ type Agendamento struct {
 	DataHoraInicio            time.Time         `json:"data_hora_inicio"`
 	DataHoraFim               time.Time         `json:"data_hora_fim"`
 	ValorCombinado            float64           `json:"valor_combinado"`
+	ValorPacote               *float64          `json:"valor_pacote"`
 	PercentualComissaoMomento float64           `json:"percentual_comissao_momento"`
 	Status                    StatusAgendamento `json:"status"`
 	PagoPeloPaciente          bool              `json:"pago_pelo_paciente"`

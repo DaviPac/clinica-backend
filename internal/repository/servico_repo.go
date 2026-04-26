@@ -17,30 +17,30 @@ func NewServicoRepository(db *pgxpool.Pool) *ServicoRepository {
 
 func (r *ServicoRepository) Create(ctx context.Context, s *domain.Servico) error {
 	query := `
-		INSERT INTO servicos (profissional_id, nome, valor_atual, ativo)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO servicos (profissional_id, nome, valor_atual, ativo, is_pacote)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id`
 
 	return r.db.QueryRow(ctx, query,
-		s.ProfissionalID, s.Nome, s.ValorAtual, s.Ativo,
+		s.ProfissionalID, s.Nome, s.ValorAtual, s.Ativo, s.IsPacote,
 	).Scan(&s.ID)
 }
 
 func (r *ServicoRepository) FindByID(ctx context.Context, id int) (*domain.Servico, error) {
 	query := `
-		SELECT id, profissional_id, nome, valor_atual, ativo
+		SELECT id, profissional_id, nome, valor_atual, ativo, is_pacote
 		FROM servicos WHERE id = $1`
 
 	s := &domain.Servico{}
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&s.ID, &s.ProfissionalID, &s.Nome, &s.ValorAtual, &s.Ativo,
+		&s.ID, &s.ProfissionalID, &s.Nome, &s.ValorAtual, &s.Ativo, &s.IsPacote,
 	)
 	return s, err
 }
 
 func (r *ServicoRepository) ListAll(ctx context.Context, apenasAtivos bool) ([]*domain.Servico, error) {
 	query := `
-		SELECT id, profissional_id, nome, valor_atual, ativo
+		SELECT id, profissional_id, nome, valor_atual, ativo, is_pacote
 		FROM servicos
 		WHERE ($1 = false OR ativo = true)
 		ORDER BY nome`
@@ -54,7 +54,7 @@ func (r *ServicoRepository) ListAll(ctx context.Context, apenasAtivos bool) ([]*
 	var lista []*domain.Servico
 	for rows.Next() {
 		s := &domain.Servico{}
-		if err := rows.Scan(&s.ID, &s.ProfissionalID, &s.Nome, &s.ValorAtual, &s.Ativo); err != nil {
+		if err := rows.Scan(&s.ID, &s.ProfissionalID, &s.Nome, &s.ValorAtual, &s.Ativo, &s.IsPacote); err != nil {
 			return nil, err
 		}
 		lista = append(lista, s)
@@ -65,7 +65,7 @@ func (r *ServicoRepository) ListAll(ctx context.Context, apenasAtivos bool) ([]*
 // Lista serviços do próprio profissional (ativos por padrão)
 func (r *ServicoRepository) ListByProfissional(ctx context.Context, profissionalID int, apenasAtivos bool) ([]*domain.Servico, error) {
 	query := `
-		SELECT id, profissional_id, nome, valor_atual, ativo
+		SELECT id, profissional_id, nome, valor_atual, ativo, is_pacote
 		FROM servicos
 		WHERE profissional_id = $1
 		  AND ($2 = false OR ativo = true)
@@ -80,7 +80,7 @@ func (r *ServicoRepository) ListByProfissional(ctx context.Context, profissional
 	var lista []*domain.Servico
 	for rows.Next() {
 		s := &domain.Servico{}
-		if err := rows.Scan(&s.ID, &s.ProfissionalID, &s.Nome, &s.ValorAtual, &s.Ativo); err != nil {
+		if err := rows.Scan(&s.ID, &s.ProfissionalID, &s.Nome, &s.ValorAtual, &s.Ativo, &s.IsPacote); err != nil {
 			return nil, err
 		}
 		lista = append(lista, s)
@@ -90,8 +90,8 @@ func (r *ServicoRepository) ListByProfissional(ctx context.Context, profissional
 
 func (r *ServicoRepository) Update(ctx context.Context, s *domain.Servico) error {
 	_, err := r.db.Exec(ctx,
-		`UPDATE servicos SET nome = $1, valor_atual = $2, ativo = $3 WHERE id = $4 AND profissional_id = $5`,
-		s.Nome, s.ValorAtual, s.Ativo, s.ID, s.ProfissionalID,
+		`UPDATE servicos SET nome = $1, valor_atual = $2, ativo = $3, is_pacote = $4 WHERE id = $5 AND profissional_id = $6`,
+		s.Nome, s.ValorAtual, s.Ativo, s.IsPacote, s.ID, s.ProfissionalID,
 	)
 	return err
 }

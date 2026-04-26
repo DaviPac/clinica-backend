@@ -22,6 +22,7 @@ func NewServicoHandler(repo *repository.ServicoRepository) *ServicoHandler {
 type criarServicoRequest struct {
 	Nome       string  `json:"nome"`
 	ValorAtual float64 `json:"valor_atual"`
+	Pacote     bool    `json:"pacote"`
 }
 
 // POST /servicos
@@ -43,6 +44,7 @@ func (h *ServicoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 		Nome:           req.Nome,
 		ValorAtual:     req.ValorAtual,
 		Ativo:          true,
+		IsPacote:       req.Pacote,
 	}
 
 	if err := h.repo.Create(r.Context(), s); err != nil {
@@ -91,6 +93,7 @@ func (h *ServicoHandler) Atualizar(w http.ResponseWriter, r *http.Request) {
 		Nome       string  `json:"nome"`
 		ValorAtual float64 `json:"valor_atual"`
 		Ativo      bool    `json:"ativo"`
+		Pacote     bool    `json:"pacote"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondErro(w, "corpo inválido", http.StatusBadRequest)
@@ -103,6 +106,7 @@ func (h *ServicoHandler) Atualizar(w http.ResponseWriter, r *http.Request) {
 		Nome:           req.Nome,
 		ValorAtual:     req.ValorAtual,
 		Ativo:          req.Ativo,
+		IsPacote:       req.Pacote,
 	}
 
 	if err := h.repo.Update(r.Context(), s); err != nil {

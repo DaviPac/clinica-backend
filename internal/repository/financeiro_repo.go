@@ -280,6 +280,24 @@ func (r *FinanceiroRepository) SaldoDevidoProfissional(ctx context.Context, prof
 	return comissaoTotal - jaAcertado, nil
 }
 
+// Calcula quanto um profissional recebeu num período
+func (r *FinanceiroRepository) SaldoProfissional(ctx context.Context, profissionalID int, periodo string) (float64, error) {
+	var comissaoTotal float64
+	err := r.db.QueryRow(ctx, `
+		SELECT COALESCE(SUM(valor_combinado * percentual_comissao_momento / 100.0), 0)
+		FROM agendamentos
+		WHERE profissional_id = $1
+		  AND pago_pelo_paciente = true
+		  AND TO_CHAR(data_hora_inicio AT TIME ZONE 'UTC', 'YYYY-MM') = $2`,
+		profissionalID, periodo,
+	).Scan(&comissaoTotal)
+	if err != nil {
+		return 0, err
+	}
+
+	return comissaoTotal, nil
+}
+
 // Utilitário: período no formato YYYY-MM a partir de uma data
 func PeriodoDe(t time.Time) string {
 	return t.UTC().Format("2006-01")

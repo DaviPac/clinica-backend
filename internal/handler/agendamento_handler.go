@@ -6,6 +6,7 @@ import (
 	"clinica-api/internal/repository"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -36,6 +37,9 @@ type criarAgendamentoRequest struct {
 	Recorrente       bool `json:"recorrente"`
 	TotalSessoes     int  `json:"total_sessoes"`     // ex: 10
 	IntervaloSemanas int  `json:"intervalo_semanas"` // ex: 1 (semanal)
+
+	// Pacote opcional
+	Pacote bool `json:"pacote"`
 }
 
 // POST /agendamentos
@@ -120,17 +124,55 @@ func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 
 	groupID := uuid.NewString()
 	var lote []*domain.Agendamento
+	var sessoesValores []float64
+	var valorPacote *float64
+	valorPacote = nil
+	sessoesValores = make([]float64, req.TotalSessoes)
+	if req.Pacote == true {
+		valorPacote = &req.ValorCombinado
+		// Trabalha em centavos pra evitar erro de float
+		totalCentavos := int(math.Round(req.ValorCombinado * 100))
+		base := totalCentavos / req.TotalSessoes
+		resto := totalCentavos % req.TotalSessoes
+
+		for i := 0; i < req.TotalSessoes; i++ {
+			valorCentavos := base
+
+			// Distribui o resto no final (opcional)
+			if i >= req.TotalSessoes-resto {
+				valorCentavos++
+			}
+
+			sessoesValores[i] = float64(valorCentavos) / 100
+		}
+	} else {
+		// Cada sessão recebe o valor combinado
+		for i := 0; i < req.TotalSessoes; i++ {
+			sessoesValores[i] = req.ValorCombinado
+		}
+	}
 
 	for i := 0; i < req.TotalSessoes; i++ {
 		offset := time.Duration(i*req.IntervaloSemanas) * 7 * 24 * time.Hour
 		s := inicio.Add(offset)
+		e := s.Add(duracao)
+		conflito, err := h.repo.ExisteConflito(r.Context(), profissionalID, s, e, nil)
+		if err != nil {
+			respondErro(w, "erro ao verificar conflito", http.StatusInternalServerError)
+			return
+		}
+		if conflito {
+			respondErro(w, fmt.Sprintf("conflito na sessão %d", i+1), http.StatusConflict)
+			return
+		}
 		lote = append(lote, &domain.Agendamento{
 			PacienteID:                req.PacienteID,
 			ProfissionalID:            profissionalID,
 			ServicoID:                 req.ServicoID,
 			DataHoraInicio:            s,
-			DataHoraFim:               s.Add(duracao),
-			ValorCombinado:            req.ValorCombinado,
+			DataHoraFim:               e,
+			ValorCombinado:            sessoesValores[i],
+			ValorPacote:               valorPacote,
 			PercentualComissaoMomento: usuario.TaxaComissaoPadrao,
 			Status:                    domain.StatusAgendado,
 			RecorrenciaGroupID:        &groupID,

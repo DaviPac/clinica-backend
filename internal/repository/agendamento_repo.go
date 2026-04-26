@@ -22,15 +22,15 @@ func (r *AgendamentoRepository) Create(ctx context.Context, a *domain.Agendament
 		INSERT INTO agendamentos (
 			paciente_id, profissional_id, servico_id,
 			data_hora_inicio, data_hora_fim,
-			valor_combinado, percentual_comissao_momento,
+			valor_combinado, valor_pacote, percentual_comissao_momento,
 			status, pago_pelo_paciente, recorrencia_group_id
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 		RETURNING id, criado_em`
 
 	return r.db.QueryRow(ctx, query,
 		a.PacienteID, a.ProfissionalID, a.ServicoID,
 		a.DataHoraInicio, a.DataHoraFim,
-		a.ValorCombinado, a.PercentualComissaoMomento,
+		a.ValorCombinado, a.ValorPacote, a.PercentualComissaoMomento,
 		a.Status, a.PagoPeloPaciente, a.RecorrenciaGroupID,
 	).Scan(&a.ID, &a.CriadoEm)
 }
@@ -48,15 +48,15 @@ func (r *AgendamentoRepository) CreateLote(ctx context.Context, agendamentos []*
 			INSERT INTO agendamentos (
 				paciente_id, profissional_id, servico_id,
 				data_hora_inicio, data_hora_fim,
-				valor_combinado, percentual_comissao_momento,
+				valor_combinado, valor_pacote, percentual_comissao_momento,
 				status, pago_pelo_paciente, recorrencia_group_id
-			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 			RETURNING id, criado_em`
 
 		if err := tx.QueryRow(ctx, query,
 			a.PacienteID, a.ProfissionalID, a.ServicoID,
 			a.DataHoraInicio, a.DataHoraFim,
-			a.ValorCombinado, a.PercentualComissaoMomento,
+			a.ValorCombinado, a.ValorPacote, a.PercentualComissaoMomento,
 			a.Status, a.PagoPeloPaciente, a.RecorrenciaGroupID,
 		).Scan(&a.ID, &a.CriadoEm); err != nil {
 			return fmt.Errorf("erro ao inserir agendamento: %w", err)
@@ -70,7 +70,7 @@ func (r *AgendamentoRepository) FindByID(ctx context.Context, id int) (*domain.A
 	query := `
 		SELECT id, paciente_id, profissional_id, servico_id,
 			   data_hora_inicio, data_hora_fim,
-			   valor_combinado, percentual_comissao_momento,
+			   valor_combinado, valor_pacote, percentual_comissao_momento,
 			   status, pago_pelo_paciente, recorrencia_group_id, criado_em
 		FROM agendamentos WHERE id = $1`
 
@@ -78,7 +78,7 @@ func (r *AgendamentoRepository) FindByID(ctx context.Context, id int) (*domain.A
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&a.ID, &a.PacienteID, &a.ProfissionalID, &a.ServicoID,
 		&a.DataHoraInicio, &a.DataHoraFim,
-		&a.ValorCombinado, &a.PercentualComissaoMomento,
+		&a.ValorCombinado, &a.ValorPacote, &a.PercentualComissaoMomento,
 		&a.Status, &a.PagoPeloPaciente, &a.RecorrenciaGroupID, &a.CriadoEm,
 	)
 	return a, err
@@ -89,7 +89,7 @@ func (r *AgendamentoRepository) List(ctx context.Context, f domain.FiltroAgendam
 	query := `
 		SELECT id, paciente_id, profissional_id, servico_id,
 			   data_hora_inicio, data_hora_fim,
-			   valor_combinado, percentual_comissao_momento,
+			   valor_combinado, valor_pacote, percentual_comissao_momento,
 			   status, pago_pelo_paciente, recorrencia_group_id, criado_em
 		FROM agendamentos
 		WHERE 1=1`
@@ -152,7 +152,21 @@ func (r *AgendamentoRepository) UpdateStatus(ctx context.Context, id int, status
 }
 
 func (r *AgendamentoRepository) UpdatePagamento(ctx context.Context, id int, pago bool) error {
-	_, err := r.db.Exec(ctx,
+	a, err := r.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if a.ValorPacote != nil {
+		if a.RecorrenciaGroupID == nil {
+			return fmt.Errorf("id de recorrencia nulo em pacote")
+		}
+		_, err = r.db.Exec(ctx,
+			`UPDATE agendamentos SET pago_pelo_paciente = $1 WHERE recorrencia_group_id = $2`,
+			pago, *a.RecorrenciaGroupID,
+		)
+		return err
+	}
+	_, err = r.db.Exec(ctx,
 		`UPDATE agendamentos SET pago_pelo_paciente = $1 WHERE id = $2`,
 		pago, id,
 	)
@@ -219,7 +233,7 @@ func scanAgendamentos(rows interface {
 		if err := rows.Scan(
 			&a.ID, &a.PacienteID, &a.ProfissionalID, &a.ServicoID,
 			&a.DataHoraInicio, &a.DataHoraFim,
-			&a.ValorCombinado, &a.PercentualComissaoMomento,
+			&a.ValorCombinado, &a.ValorPacote, &a.PercentualComissaoMomento,
 			&a.Status, &a.PagoPeloPaciente, &a.RecorrenciaGroupID, &a.CriadoEm,
 		); err != nil {
 			return nil, err

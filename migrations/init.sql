@@ -34,7 +34,8 @@ CREATE TABLE servicos (
     profissional_id INT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     nome VARCHAR(100) NOT NULL,
     valor_atual DECIMAL(10,2) NOT NULL,
-    ativo BOOLEAN DEFAULT TRUE
+    ativo BOOLEAN DEFAULT TRUE,
+    is_pacote BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- 5. Agendamentos
@@ -46,6 +47,7 @@ CREATE TABLE agendamentos (
     data_hora_inicio TIMESTAMPTZ NOT NULL,
     data_hora_fim TIMESTAMPTZ NOT NULL,
     valor_combinado DECIMAL(10,2) NOT NULL,
+    valor_pacote DECIMAL(10,2),
     percentual_comissao_momento DECIMAL(5,2) NOT NULL,
     status VARCHAR(20) NOT NULL CHECK (status IN ('AGENDADO', 'REALIZADO', 'FALTA', 'CANCELADO')),
     pago_pelo_paciente BOOLEAN DEFAULT FALSE,
