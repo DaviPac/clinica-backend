@@ -84,48 +84,57 @@ func (r *AgendamentoRepository) FindByID(ctx context.Context, id int) (*domain.A
 	return a, err
 }
 
-// Lista com filtro opcional de período
-func (r *AgendamentoRepository) ListAll(
-	ctx context.Context,
-	de, ate *time.Time,
-) ([]*domain.Agendamento, error) {
+func (r *AgendamentoRepository) List(ctx context.Context, f domain.FiltroAgendamento) ([]*domain.Agendamento, error) {
+	// 1. Query base (1=1 é um truque clássico para facilitar a adição de ANDs depois)
 	query := `
 		SELECT id, paciente_id, profissional_id, servico_id,
 			   data_hora_inicio, data_hora_fim,
 			   valor_combinado, percentual_comissao_momento,
 			   status, pago_pelo_paciente, recorrencia_group_id, criado_em
 		FROM agendamentos
-		WHERE ($1::timestamptz IS NULL OR data_hora_inicio >= $1)
-		  AND ($2::timestamptz IS NULL OR data_hora_inicio <= $2)
-		ORDER BY data_hora_inicio`
+		WHERE 1=1`
 
-	rows, err := r.db.Query(ctx, query, de, ate)
-	if err != nil {
-		return nil, err
+	var args []interface{}
+	argID := 1 // Contador dinâmico para os parâmetros do Postgres ($1, $2...)
+
+	// 2. Anexando filtros dinamicamente
+	if f.ProfissionalID != nil {
+		query += fmt.Sprintf(" AND profissional_id = $%d", argID)
+		args = append(args, *f.ProfissionalID)
+		argID++
 	}
-	defer rows.Close()
 
-	return scanAgendamentos(rows)
-}
+	if f.De != nil {
+		query += fmt.Sprintf(" AND data_hora_inicio >= $%d", argID)
+		args = append(args, *f.De)
+		argID++
+	}
 
-// Lista por profissional com filtro opcional de período
-func (r *AgendamentoRepository) ListByProfissional(
-	ctx context.Context,
-	profissionalID int,
-	de, ate *time.Time,
-) ([]*domain.Agendamento, error) {
-	query := `
-		SELECT id, paciente_id, profissional_id, servico_id,
-			   data_hora_inicio, data_hora_fim,
-			   valor_combinado, percentual_comissao_momento,
-			   status, pago_pelo_paciente, recorrencia_group_id, criado_em
-		FROM agendamentos
-		WHERE profissional_id = $1
-		  AND ($2::timestamptz IS NULL OR data_hora_inicio >= $2)
-		  AND ($3::timestamptz IS NULL OR data_hora_inicio <= $3)
-		ORDER BY data_hora_inicio`
+	if f.Ate != nil {
+		query += fmt.Sprintf(" AND data_hora_inicio <= $%d", argID)
+		args = append(args, *f.Ate)
+		argID++
+	}
 
-	rows, err := r.db.Query(ctx, query, profissionalID, de, ate)
+	if f.Status != nil {
+		query += fmt.Sprintf(" AND status = $%d", argID)
+		args = append(args, *f.Status)
+		argID++
+	}
+
+	if f.ApenasAtrasados {
+		query += " AND data_hora_fim < NOW()"
+	}
+
+	if f.PagamentoPendente {
+		query += " AND pago_pelo_paciente = FALSE"
+	}
+
+	// 3. Finalizando a query
+	query += " ORDER BY data_hora_inicio"
+
+	// 4. Executando a query passando o slice 'args' descompactado (...args)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

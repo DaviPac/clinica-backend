@@ -256,7 +256,6 @@ func (r *FinanceiroRepository) SaldoDevidoProfissional(ctx context.Context, prof
 		SELECT COALESCE(SUM(valor_combinado * percentual_comissao_momento / 100.0), 0)
 		FROM agendamentos
 		WHERE profissional_id = $1
-		  AND status = 'REALIZADO'
 		  AND pago_pelo_paciente = true
 		  AND TO_CHAR(data_hora_inicio AT TIME ZONE 'UTC', 'YYYY-MM') = $2`,
 		profissionalID, periodo,

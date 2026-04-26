@@ -69,6 +69,15 @@ type Agendamento struct {
 	CriadoEm                  time.Time         `json:"criado_em"`
 }
 
+type FiltroAgendamento struct {
+	ProfissionalID    *int
+	De                *time.Time
+	Ate               *time.Time
+	Status            *string // "AGENDADO", "REALIZADO", etc.
+	ApenasAtrasados   bool    // Para filtrar data_hora_fim < NOW()
+	PagamentoPendente bool    // Para filtrar pago_pelo_paciente = FALSE
+}
+
 // --- Acerto de Comissão ---
 
 type AcertoComissao struct {

@@ -149,25 +149,44 @@ func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 	}, http.StatusCreated)
 }
 
-// GET /agendamentos?de=2025-01-01&ate=2025-01-31
+// GET /agendamentos
 func (h *AgendamentoHandler) Listar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	profissionalID := middleware.GetUserID(ctx)
 	isAdmin := middleware.GetRole(ctx) == domain.RoleAdmin
+
 	mostrarTodos := r.URL.Query().Get("todos") == "true"
+	tipoFiltro := r.URL.Query().Get("filtro")
 
-	de, ate := parseFiltrosPeriodo(r)
+	// Prepara a struct de filtros
+	filtro := domain.FiltroAgendamento{}
 
-	var agendamentos []*domain.Agendamento
-	var err error
-
-	// Define qual query executar baseando-se nas permissões e filtros
-	if isAdmin && mostrarTodos {
-		agendamentos, err = h.repo.ListAll(ctx, de, ate)
-	} else {
-		agendamentos, err = h.repo.ListByProfissional(ctx, profissionalID, de, ate)
+	// Regra de permissão: Se não for admin, ou não pedir "todos", prende no ID do profissional logado
+	if !isAdmin || !mostrarTodos {
+		filtro.ProfissionalID = &profissionalID
 	}
 
+	// Regras de negócio da API
+	switch tipoFiltro {
+	case "pendente":
+		status := "AGENDADO"
+		filtro.Status = &status
+		filtro.ApenasAtrasados = true
+
+	case "pagamento_pendente":
+		status := "REALIZADO"
+		filtro.Status = &status
+		filtro.PagamentoPendente = true
+
+	default:
+		// Fluxo de lista padrão (filtra por data)
+		de, ate := parseFiltrosPeriodo(r)
+		filtro.De = de
+		filtro.Ate = ate
+	}
+
+	// Chama o repositório unificado
+	agendamentos, err := h.repo.List(ctx, filtro)
 	if err != nil {
 		respondErro(w, "erro ao listar agendamentos", http.StatusInternalServerError)
 		return
