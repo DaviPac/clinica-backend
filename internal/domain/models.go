@@ -83,13 +83,12 @@ type FiltroAgendamento struct {
 // --- Acerto de Comissão ---
 
 type AcertoComissao struct {
-	ID                  int       `json:"id"`
-	ProfissionalID      int       `json:"profissional_id"`
-	PeriodoReferencia   string    `json:"periodo_referencia"` // "YYYY-MM"
-	ValorPagoAClinica   float64   `json:"valor_pago_a_clinica"`
-	DataPagamento       time.Time `json:"data_pagamento"`
-	ConfirmadoPeloAdmin bool      `json:"confirmado_pelo_admin"`
-	Observacao          *string   `json:"observacao"`
+	ID                int       `json:"id"`
+	ProfissionalID    int       `json:"profissional_id"`
+	PeriodoReferencia string    `json:"periodo_referencia"` // "YYYY-MM"
+	ValorPago         float64   `json:"valor_pago"`
+	DataPagamento     time.Time `json:"data_pagamento"`
+	Observacao        *string   `json:"observacao"`
 }
 
 // --- Despesa ---

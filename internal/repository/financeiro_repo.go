@@ -16,33 +16,25 @@ func NewFinanceiroRepository(db *pgxpool.Pool) *FinanceiroRepository {
 	return &FinanceiroRepository{db: db}
 }
 
-// ── Acertos de Comissão ──────────────────────────────────────────────────────
+// ── Acertos de Repasse ───────────────────────────────────────────────────────
 
 func (r *FinanceiroRepository) CreateAcerto(ctx context.Context, a *domain.AcertoComissao) error {
 	query := `
 		INSERT INTO acertos_comissao
-			(profissional_id, periodo_referencia, valor_pago_a_clinica, data_pagamento, observacao)
+			(profissional_id, periodo_referencia, valor_pago, data_pagamento, observacao)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id`
 
 	return r.db.QueryRow(ctx, query,
 		a.ProfissionalID, a.PeriodoReferencia,
-		a.ValorPagoAClinica, a.DataPagamento, a.Observacao,
+		a.ValorPago, a.DataPagamento, a.Observacao,
 	).Scan(&a.ID)
-}
-
-func (r *FinanceiroRepository) ConfirmarAcerto(ctx context.Context, id int) error {
-	_, err := r.db.Exec(ctx,
-		`UPDATE acertos_comissao SET confirmado_pelo_admin = true WHERE id = $1`,
-		id,
-	)
-	return err
 }
 
 func (r *FinanceiroRepository) ListAcertos(ctx context.Context) ([]*domain.AcertoComissao, error) {
 	query := `
 		SELECT id, profissional_id, periodo_referencia,
-			   valor_pago_a_clinica, data_pagamento, confirmado_pelo_admin, observacao
+			   valor_pago, data_pagamento, observacao
 		FROM acertos_comissao
 		ORDER BY data_pagamento DESC`
 
@@ -57,7 +49,7 @@ func (r *FinanceiroRepository) ListAcertos(ctx context.Context) ([]*domain.Acert
 		a := &domain.AcertoComissao{}
 		if err := rows.Scan(
 			&a.ID, &a.ProfissionalID, &a.PeriodoReferencia,
-			&a.ValorPagoAClinica, &a.DataPagamento, &a.ConfirmadoPeloAdmin, &a.Observacao,
+			&a.ValorPago, &a.DataPagamento, &a.Observacao,
 		); err != nil {
 			return nil, err
 		}
@@ -69,7 +61,7 @@ func (r *FinanceiroRepository) ListAcertos(ctx context.Context) ([]*domain.Acert
 func (r *FinanceiroRepository) ListAcertosByProfissional(ctx context.Context, profissionalID int) ([]*domain.AcertoComissao, error) {
 	query := `
 		SELECT id, profissional_id, periodo_referencia,
-			   valor_pago_a_clinica, data_pagamento, confirmado_pelo_admin, observacao
+			   valor_pago, data_pagamento, observacao
 		FROM acertos_comissao
 		WHERE profissional_id = $1
 		ORDER BY data_pagamento DESC`
@@ -85,7 +77,7 @@ func (r *FinanceiroRepository) ListAcertosByProfissional(ctx context.Context, pr
 		a := &domain.AcertoComissao{}
 		if err := rows.Scan(
 			&a.ID, &a.ProfissionalID, &a.PeriodoReferencia,
-			&a.ValorPagoAClinica, &a.DataPagamento, &a.ConfirmadoPeloAdmin, &a.Observacao,
+			&a.ValorPago, &a.DataPagamento, &a.Observacao,
 		); err != nil {
 			return nil, err
 		}
@@ -146,10 +138,11 @@ func (r *FinanceiroRepository) MarcarDespesaPaga(ctx context.Context, id int) er
 type ResumoComissaoProfissional struct {
 	ProfissionalID   int     `json:"profissional_id"`
 	NomeProfissional string  `json:"nome_profissional"`
-	TotalRecebido    float64 `json:"total_recebido"`   // soma dos valores_combinados pagos
-	ComissaoClinica  float64 `json:"comissao_clinica"` // o que a clínica tem a receber
-	TotalAcertado    float64 `json:"total_acertado"`   // já pago via acerto
-	Pendente         float64 `json:"pendente"`         // comissao_clinica - total_acertado
+	TotalRecebido    float64 `json:"total_recebido"`   // soma dos valores_combinados (tudo entra na clínica)
+	ComissaoClinica  float64 `json:"comissao_clinica"` // parte que fica na clínica
+	AReceber         float64 `json:"a_receber"`        // parte bruta devida ao profissional
+	TotalRepassado   float64 `json:"total_repassado"`  // já pago via acerto
+	Pendente         float64 `json:"pendente"`         // a_receber - total_repassado
 }
 
 type RelatorioFinanceiro struct {
@@ -161,13 +154,14 @@ type RelatorioFinanceiro struct {
 }
 
 func (r *FinanceiroRepository) GerarRelatorio(ctx context.Context, periodo string) (*RelatorioFinanceiro, error) {
-	// 1. Comissões por profissional no período
+	// 1. Totais por profissional no período
 	queryComissoes := `
 		SELECT
 			u.id,
 			u.nome,
-			COALESCE(SUM(a.valor_combinado), 0)                                           AS total_recebido,
-			COALESCE(SUM(a.valor_combinado * a.percentual_comissao_momento / 100.0), 0)   AS comissao_clinica
+			COALESCE(SUM(a.valor_combinado), 0)                                                       AS total_recebido,
+			COALESCE(SUM(a.valor_combinado * a.percentual_comissao_momento / 100.0), 0)               AS comissao_clinica,
+			COALESCE(SUM(a.valor_combinado * (1 - a.percentual_comissao_momento / 100.0)), 0)         AS a_receber
 		FROM agendamentos a
 		INNER JOIN usuarios u ON u.id = a.profissional_id
 		WHERE a.status = 'REALIZADO'
@@ -187,7 +181,7 @@ func (r *FinanceiroRepository) GerarRelatorio(ctx context.Context, periodo strin
 
 	for rows.Next() {
 		var p ResumoComissaoProfissional
-		if err := rows.Scan(&p.ProfissionalID, &p.NomeProfissional, &p.TotalRecebido, &p.ComissaoClinica); err != nil {
+		if err := rows.Scan(&p.ProfissionalID, &p.NomeProfissional, &p.TotalRecebido, &p.ComissaoClinica, &p.AReceber); err != nil {
 			return nil, err
 		}
 		profissionais = append(profissionais, p)
@@ -197,11 +191,11 @@ func (r *FinanceiroRepository) GerarRelatorio(ctx context.Context, periodo strin
 		return nil, err
 	}
 
-	// 2. Acertos já realizados no período
+	// 2. Repasses já realizados no período
 	queryAcertos := `
-		SELECT profissional_id, COALESCE(SUM(valor_pago_a_clinica), 0)
+		SELECT profissional_id, COALESCE(SUM(valor_pago), 0)
 		FROM acertos_comissao
-		WHERE periodo_referencia = $1 AND confirmado_pelo_admin = true
+		WHERE periodo_referencia = $1
 		GROUP BY profissional_id`
 
 	rowsAcertos, err := r.db.Query(ctx, queryAcertos, periodo)
@@ -223,8 +217,8 @@ func (r *FinanceiroRepository) GerarRelatorio(ctx context.Context, periodo strin
 	// 3. Calcula pendente por profissional
 	for i := range profissionais {
 		p := &profissionais[i]
-		p.TotalAcertado = acertosMap[p.ProfissionalID]
-		p.Pendente = p.ComissaoClinica - p.TotalAcertado
+		p.TotalRepassado = acertosMap[p.ProfissionalID]
+		p.Pendente = p.AReceber - p.TotalRepassado
 	}
 
 	// 4. Total de despesas do período
@@ -249,53 +243,48 @@ func (r *FinanceiroRepository) GerarRelatorio(ctx context.Context, periodo strin
 	}, nil
 }
 
-// Calcula quanto um profissional deve à clínica num período (usado antes de criar acerto)
-func (r *FinanceiroRepository) SaldoDevidoProfissional(ctx context.Context, profissionalID int, periodo string) (float64, error) {
-	var comissaoTotal float64
+// SaldoAReceberProfissional calcula quanto a clínica ainda deve repassar ao profissional num período
+func (r *FinanceiroRepository) SaldoAReceberProfissional(ctx context.Context, profissionalID int, periodo string) (float64, error) {
+	var brutoDevido float64
 	err := r.db.QueryRow(ctx, `
-		SELECT COALESCE(SUM(valor_combinado * percentual_comissao_momento / 100.0), 0)
+		SELECT COALESCE(SUM(valor_combinado * (1 - percentual_comissao_momento / 100.0)), 0)
 		FROM agendamentos
 		WHERE profissional_id = $1
 		  AND pago_pelo_paciente = true
 		  AND TO_CHAR(data_hora_inicio AT TIME ZONE 'UTC', 'YYYY-MM') = $2`,
 		profissionalID, periodo,
-	).Scan(&comissaoTotal)
+	).Scan(&brutoDevido)
 	if err != nil {
 		return 0, err
 	}
 
-	var jaAcertado float64
+	var jaRepassado float64
 	err = r.db.QueryRow(ctx, `
-		SELECT COALESCE(SUM(valor_pago_a_clinica), 0)
+		SELECT COALESCE(SUM(valor_pago), 0)
 		FROM acertos_comissao
 		WHERE profissional_id = $1
-		  AND periodo_referencia = $2
-		  AND confirmado_pelo_admin = true`,
+		  AND periodo_referencia = $2`,
 		profissionalID, periodo,
-	).Scan(&jaAcertado)
+	).Scan(&jaRepassado)
 	if err != nil {
 		return 0, err
 	}
 
-	return comissaoTotal - jaAcertado, nil
+	return brutoDevido - jaRepassado, nil
 }
 
-// Calcula quanto um profissional recebeu num período
+// SaldoProfissional retorna o total bruto gerado pelo profissional num período (antes do repasse)
 func (r *FinanceiroRepository) SaldoProfissional(ctx context.Context, profissionalID int, periodo string) (float64, error) {
-	var comissaoTotal float64
+	var total float64
 	err := r.db.QueryRow(ctx, `
-		SELECT COALESCE(SUM(valor_combinado * percentual_comissao_momento / 100.0), 0)
+		SELECT COALESCE(SUM(valor_combinado), 0)
 		FROM agendamentos
 		WHERE profissional_id = $1
 		  AND pago_pelo_paciente = true
 		  AND TO_CHAR(data_hora_inicio AT TIME ZONE 'UTC', 'YYYY-MM') = $2`,
 		profissionalID, periodo,
-	).Scan(&comissaoTotal)
-	if err != nil {
-		return 0, err
-	}
-
-	return comissaoTotal, nil
+	).Scan(&total)
+	return total, err
 }
 
 // Utilitário: período no formato YYYY-MM a partir de uma data

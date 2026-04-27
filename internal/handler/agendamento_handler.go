@@ -6,7 +6,6 @@ import (
 	"clinica-api/internal/repository"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -127,26 +126,19 @@ func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 	var sessoesValores []float64
 	var valorPacote *float64
 	valorPacote = nil
+
 	sessoesValores = make([]float64, req.TotalSessoes)
+
 	if req.Pacote == true {
 		valorPacote = &req.ValorCombinado
-		// Trabalha em centavos pra evitar erro de float
-		totalCentavos := int(math.Round(req.ValorCombinado * 100))
-		base := totalCentavos / req.TotalSessoes
-		resto := totalCentavos % req.TotalSessoes
 
-		for i := 0; i < req.TotalSessoes; i++ {
-			valorCentavos := base
-
-			// Distribui o resto no final (opcional)
-			if i >= req.TotalSessoes-resto {
-				valorCentavos++
-			}
-
-			sessoesValores[i] = float64(valorCentavos) / 100
+		// Atribui o valor do pacote inteiro apenas ao primeiro agendamento
+		// As demais sessões já recebem 0.0 por padrão da inicialização do slice
+		if req.TotalSessoes > 0 {
+			sessoesValores[0] = req.ValorCombinado
 		}
 	} else {
-		// Cada sessão recebe o valor combinado
+		// Cada sessão recebe o valor combinado individualmente
 		for i := 0; i < req.TotalSessoes; i++ {
 			sessoesValores[i] = req.ValorCombinado
 		}
@@ -156,6 +148,7 @@ func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 		offset := time.Duration(i*req.IntervaloSemanas) * 7 * 24 * time.Hour
 		s := inicio.Add(offset)
 		e := s.Add(duracao)
+
 		conflito, err := h.repo.ExisteConflito(r.Context(), profissionalID, s, e, nil)
 		if err != nil {
 			respondErro(w, "erro ao verificar conflito", http.StatusInternalServerError)
@@ -165,6 +158,7 @@ func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 			respondErro(w, fmt.Sprintf("conflito na sessão %d", i+1), http.StatusConflict)
 			return
 		}
+
 		lote = append(lote, &domain.Agendamento{
 			PacienteID:                req.PacienteID,
 			ProfissionalID:            profissionalID,

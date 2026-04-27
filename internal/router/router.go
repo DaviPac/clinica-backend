@@ -67,16 +67,15 @@ func New(db *pgxpool.Pool) *chi.Mux {
 		r.Delete("/servicos/{id}", servicoHandler.Desativar)
 
 		// Financeiro — profissional
-		r.Post("/financeiro/acertos", financeiroHandler.CriarAcerto)
 		r.Get("/financeiro/acertos", financeiroHandler.ListarAcertos)
-		r.Get("/financeiro/saldo-devido", financeiroHandler.SaldoDevido)
+		r.Get("/financeiro/saldo-a-receber", financeiroHandler.SaldoAReceber)
 
 		// Financeiro + Admin exclusivo
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.ApenasAdmin)
 			r.Post("/auth/registrar", authHandler.Registrar)
 			r.Get("/usuarios", authHandler.ListarUsuarios)
-			r.Patch("/financeiro/acertos/{id}/confirmar", financeiroHandler.ConfirmarAcerto)
+			r.Post("/financeiro/acertos", financeiroHandler.CriarAcerto)
 			r.Get("/financeiro/relatorio", financeiroHandler.Relatorio)
 			r.Post("/financeiro/despesas", financeiroHandler.CriarDespesa)
 			r.Get("/financeiro/despesas", financeiroHandler.ListarDespesas)

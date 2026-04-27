@@ -60,9 +60,8 @@ CREATE TABLE acertos_comissao (
     id SERIAL PRIMARY KEY,
     profissional_id INT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     periodo_referencia VARCHAR(7) NOT NULL,
-    valor_pago_a_clinica DECIMAL(10,2) NOT NULL,
+    valor_pago DECIMAL(10,2) NOT NULL,
     data_pagamento TIMESTAMPTZ NOT NULL,
-    confirmado_pelo_admin BOOLEAN DEFAULT FALSE,
     observacao TEXT
 );
 

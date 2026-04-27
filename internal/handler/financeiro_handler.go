@@ -20,37 +20,31 @@ func NewFinanceiroHandler(repo *repository.FinanceiroRepository) *FinanceiroHand
 	return &FinanceiroHandler{repo: repo}
 }
 
-// POST /financeiro/acertos  (profissional registra o pagamento à clínica)
+// POST /financeiro/acertos  (apenas admin — registra repasse ao profissional)
 func (h *FinanceiroHandler) CriarAcerto(w http.ResponseWriter, r *http.Request) {
-	profissionalID := middleware.GetUserID(r.Context())
-	idQuery := r.URL.Query().Get("profissional_id")
-	if idQuery != "" {
-		parsedID, err := strconv.Atoi(idQuery)
-		if err != nil {
-			respondErro(w, "ID do profissional deve ser um número válido", http.StatusBadRequest)
-			return
-		}
-		profissionalID = parsedID
-	}
-
 	var body struct {
+		ProfissionalID    int     `json:"profissional_id"`
 		PeriodoReferencia string  `json:"periodo_referencia"` // "YYYY-MM"
-		ValorPagoAClinica float64 `json:"valor_pago_a_clinica"`
+		ValorPago         float64 `json:"valor_pago"`
 		Observacao        *string `json:"observacao"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondErro(w, "corpo inválido", http.StatusBadRequest)
 		return
 	}
-	if body.ValorPagoAClinica <= 0 {
-		respondErro(w, "valor_pago_a_clinica deve ser positivo", http.StatusBadRequest)
+	if body.ProfissionalID <= 0 {
+		respondErro(w, "profissional_id é obrigatório", http.StatusBadRequest)
+		return
+	}
+	if body.ValorPago <= 0 {
+		respondErro(w, "valor_pago deve ser positivo", http.StatusBadRequest)
 		return
 	}
 
 	a := &domain.AcertoComissao{
-		ProfissionalID:    profissionalID,
+		ProfissionalID:    body.ProfissionalID,
 		PeriodoReferencia: body.PeriodoReferencia,
-		ValorPagoAClinica: body.ValorPagoAClinica,
+		ValorPago:         body.ValorPago,
 		DataPagamento:     time.Now(),
 		Observacao:        body.Observacao,
 	}
@@ -63,22 +57,6 @@ func (h *FinanceiroHandler) CriarAcerto(w http.ResponseWriter, r *http.Request) 
 	respondJSON(w, a, http.StatusCreated)
 }
 
-// PATCH /financeiro/acertos/{id}/confirmar  (admin confirma o recebimento)
-func (h *FinanceiroHandler) ConfirmarAcerto(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		respondErro(w, "id inválido", http.StatusBadRequest)
-		return
-	}
-
-	if err := h.repo.ConfirmarAcerto(r.Context(), id); err != nil {
-		respondErro(w, "erro ao confirmar acerto", http.StatusInternalServerError)
-		return
-	}
-
-	respondJSON(w, map[string]bool{"confirmado": true}, http.StatusOK)
-}
-
 // GET /financeiro/acertos  (profissional vê os próprios; admin filtra por ?profissional_id=)
 func (h *FinanceiroHandler) ListarAcertos(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -88,7 +66,6 @@ func (h *FinanceiroHandler) ListarAcertos(w http.ResponseWriter, r *http.Request
 	var profissionalID int
 	var listarTodos bool
 
-	// 1. Definição da lógica de permissões e filtros
 	if role == domain.RoleAdmin {
 		if pid := r.URL.Query().Get("profissional_id"); pid != "" {
 			id, err := strconv.Atoi(pid)
@@ -101,29 +78,22 @@ func (h *FinanceiroHandler) ListarAcertos(w http.ResponseWriter, r *http.Request
 			listarTodos = true
 		}
 	} else {
-		// Se não é admin, força a ver apenas os próprios acertos
 		profissionalID = userID
 	}
 
-	// 2. Declaração sem alocação prévia
 	var acertos []*domain.AcertoComissao
 	var err error
 
-	// 3. Busca no banco de dados
 	if listarTodos {
 		acertos, err = h.repo.ListAcertos(ctx)
 	} else {
 		acertos, err = h.repo.ListAcertosByProfissional(ctx, profissionalID)
 	}
 
-	// 4. Tratamento de erro centralizado (DRY)
 	if err != nil {
-		// TODO: Idealmente, logar o 'err' internamente aqui antes de responder ao cliente
 		respondErro(w, "erro ao listar acertos", http.StatusInternalServerError)
 		return
 	}
-
-	// 5. Garantir que um slice vazio [] seja retornado no JSON em vez de null
 	if acertos == nil {
 		acertos = []*domain.AcertoComissao{}
 	}
@@ -131,14 +101,16 @@ func (h *FinanceiroHandler) ListarAcertos(w http.ResponseWriter, r *http.Request
 	respondJSON(w, acertos, http.StatusOK)
 }
 
-// GET /financeiro/saldo-devido?periodo=2025-01
-func (h *FinanceiroHandler) SaldoDevido(w http.ResponseWriter, r *http.Request) {
-	profissionalID := middleware.GetUserID(r.Context())
-	role := middleware.GetRole(r.Context())
+// GET /financeiro/saldo-a-receber?periodo=2025-01
+func (h *FinanceiroHandler) SaldoAReceber(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	profissionalID := middleware.GetUserID(ctx)
+	role := middleware.GetRole(ctx)
+
 	if role == domain.RoleAdmin {
 		if pid := r.URL.Query().Get("profissional_id"); pid != "" {
 			id, err := strconv.Atoi(pid)
-			if err != nil {
+			if err != nil || id <= 0 {
 				respondErro(w, "profissional_id inválido", http.StatusBadRequest)
 				return
 			}
@@ -151,7 +123,7 @@ func (h *FinanceiroHandler) SaldoDevido(w http.ResponseWriter, r *http.Request) 
 		periodo = repository.PeriodoDe(time.Now())
 	}
 
-	saldo, err := h.repo.SaldoDevidoProfissional(r.Context(), profissionalID, periodo)
+	saldo, err := h.repo.SaldoAReceberProfissional(ctx, profissionalID, periodo)
 	if err != nil {
 		respondErro(w, "erro ao calcular saldo", http.StatusInternalServerError)
 		return
@@ -160,7 +132,7 @@ func (h *FinanceiroHandler) SaldoDevido(w http.ResponseWriter, r *http.Request) 
 	respondJSON(w, map[string]any{
 		"profissional_id": profissionalID,
 		"periodo":         periodo,
-		"saldo_devido":    saldo,
+		"saldo_a_receber": saldo,
 	}, http.StatusOK)
 }
 
