@@ -57,7 +57,6 @@ func New(db *pgxpool.Pool) *chi.Mux {
 		r.Post("/agendamentos", agendamentoHandler.Criar)
 		r.Get("/agendamentos", agendamentoHandler.Listar)
 		r.Patch("/agendamentos/{id}/status", agendamentoHandler.AtualizarStatus)
-		r.Patch("/agendamentos/{id}/pagamento", agendamentoHandler.AtualizarPagamento)
 		r.Delete("/agendamentos/recorrencia/{groupID}", agendamentoHandler.CancelarRecorrencia)
 
 		// Serviços (cada profissional gerencia os próprios)
@@ -75,6 +74,7 @@ func New(db *pgxpool.Pool) *chi.Mux {
 			r.Use(middleware.ApenasAdmin)
 			r.Post("/auth/registrar", authHandler.Registrar)
 			r.Get("/usuarios", authHandler.ListarUsuarios)
+			r.Patch("/agendamentos/{id}/pagamento", agendamentoHandler.AtualizarPagamento)
 			r.Post("/financeiro/acertos", financeiroHandler.CriarAcerto)
 			r.Get("/financeiro/relatorio", financeiroHandler.Relatorio)
 			r.Post("/financeiro/despesas", financeiroHandler.CriarDespesa)
