@@ -337,7 +337,8 @@ func (h *AgendamentoHandler) CancelarRecorrencia(w http.ResponseWriter, r *http.
 // --- helpers ---
 
 func parseFiltrosPeriodo(r *http.Request) (*time.Time, *time.Time) {
-	parse := func(s string) *time.Time {
+	// Função para parsear a data de início (mantém 00:00:00)
+	parseDe := func(s string) *time.Time {
 		if s == "" {
 			return nil
 		}
@@ -347,7 +348,21 @@ func parseFiltrosPeriodo(r *http.Request) (*time.Time, *time.Time) {
 		}
 		return &t
 	}
-	return parse(r.URL.Query().Get("de")), parse(r.URL.Query().Get("ate"))
+
+	// Função para parsear a data final (ajusta para 23:59:59)
+	parseAte := func(s string) *time.Time {
+		if s == "" {
+			return nil
+		}
+		// Concatena a hora final do dia na string antes de fazer o parse
+		t, err := time.Parse("2006-01-02 15:04:05", s+" 23:59:59")
+		if err != nil {
+			return nil
+		}
+		return &t
+	}
+
+	return parseDe(r.URL.Query().Get("de")), parseAte(r.URL.Query().Get("ate"))
 }
 
 func parseDate(s string) (time.Time, error) {
