@@ -56,8 +56,10 @@ func New(db *pgxpool.Pool) *chi.Mux {
 		// Agendamentos
 		r.Post("/agendamentos", agendamentoHandler.Criar)
 		r.Get("/agendamentos", agendamentoHandler.Listar)
+		r.Get("/agendamentos/{id}", agendamentoHandler.GetByID)
 		r.Patch("/agendamentos/{id}/status", agendamentoHandler.AtualizarStatus)
 		r.Delete("/agendamentos/recorrencia/{groupID}", agendamentoHandler.CancelarRecorrencia)
+		r.Patch("/agendamentos/{id}/valor-combinado", agendamentoHandler.AtualizarValor)
 
 		// Serviços (cada profissional gerencia os próprios)
 		r.Get("/servicos", servicoHandler.Listar)

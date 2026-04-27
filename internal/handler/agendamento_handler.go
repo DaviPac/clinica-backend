@@ -185,6 +185,28 @@ func (h *AgendamentoHandler) Criar(w http.ResponseWriter, r *http.Request) {
 	}, http.StatusCreated)
 }
 
+// GET /agendamentos/{id}
+func (h *AgendamentoHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	profissionalID := middleware.GetUserID(ctx)
+	userRole := middleware.GetRole(ctx)
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		respondErro(w, "id inválido", http.StatusBadRequest)
+		return
+	}
+	a, err := h.repo.FindByID(ctx, id)
+	if err != nil {
+		respondErro(w, "erro ao buscar agendamento", http.StatusInternalServerError)
+		return
+	}
+	if userRole != domain.RoleAdmin && a.ProfissionalID != profissionalID {
+		respondErro(w, "nao autorizado", http.StatusForbidden)
+		return
+	}
+	respondJSON(w, a, http.StatusOK)
+}
+
 // GET /agendamentos
 func (h *AgendamentoHandler) Listar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -301,6 +323,43 @@ func (h *AgendamentoHandler) AtualizarPagamento(w http.ResponseWriter, r *http.R
 	}
 
 	respondJSON(w, map[string]bool{"pago_pelo_paciente": body.Pago}, http.StatusOK)
+}
+
+// PATCH /agendamentos/{id}/valor-combinado
+func (h *AgendamentoHandler) AtualizarValor(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		respondErro(w, "id inválido", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		Valor float64 `json:"valor_combinado"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondErro(w, "corpo inválido", http.StatusBadRequest)
+		return
+	}
+
+	agendamento, err := h.repo.FindByID(r.Context(), id)
+	if agendamento.ProfissionalID != middleware.GetUserID(r.Context()) && middleware.GetRole(r.Context()) != domain.RoleAdmin {
+		respondErro(w, "não autorizado", http.StatusForbidden)
+		return
+	}
+
+	recorrente := r.URL.Query().Get("recorrente")
+	if recorrente == "true" && agendamento.RecorrenciaGroupID != nil {
+		err = h.repo.UpdateValorCombinadoRecorrente(r.Context(), id, body.Valor)
+	} else {
+		err = h.repo.UpdateValorCombinado(r.Context(), id, body.Valor)
+	}
+
+	if err != nil {
+		respondErro(w, "erro ao atualizar valor", http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, map[string]float64{"valor_combinado": body.Valor}, http.StatusOK)
 }
 
 // DELETE /agendamentos/recorrencia/{groupID}

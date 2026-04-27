@@ -143,6 +143,32 @@ func (r *AgendamentoRepository) List(ctx context.Context, f domain.FiltroAgendam
 	return scanAgendamentos(rows)
 }
 
+func (r *AgendamentoRepository) UpdateValorCombinado(ctx context.Context, id int, valor float64) error {
+	_, err := r.db.Exec(ctx,
+		`UPDATE agendamentos SET valor_combinado = ROUND($1, 2) WHERE id = $2`,
+		valor, id,
+	)
+	return err
+}
+
+func (r *AgendamentoRepository) UpdateValorCombinadoRecorrente(ctx context.Context, id int, valor float64) error {
+	a, err := r.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if a == nil {
+		return fmt.Errorf("agendamento nao encontrado")
+	}
+	if a.ValorPacote != nil {
+		return fmt.Errorf("nao e possivel alterar recorrencia de pacote")
+	}
+	_, err = r.db.Exec(ctx,
+		`UPDATE agendamentos SET valor_combinado = ROUND($1, 2) WHERE recorrencia_group_id = $2 AND pago_pelo_paciente = FALSE`,
+		valor, id,
+	)
+	return err
+}
+
 func (r *AgendamentoRepository) UpdateStatus(ctx context.Context, id int, status domain.StatusAgendamento) error {
 	_, err := r.db.Exec(ctx,
 		`UPDATE agendamentos SET status = $1 WHERE id = $2`,
@@ -156,20 +182,63 @@ func (r *AgendamentoRepository) UpdatePagamento(ctx context.Context, id int, pag
 	if err != nil {
 		return err
 	}
+
 	if a.ValorPacote != nil {
 		if a.RecorrenciaGroupID == nil {
 			return fmt.Errorf("id de recorrencia nulo em pacote")
 		}
-		_, err = r.db.Exec(ctx,
-			`UPDATE agendamentos SET pago_pelo_paciente = $1 WHERE recorrencia_group_id = $2`,
-			pago, *a.RecorrenciaGroupID,
-		)
-		return err
+
+		if pago {
+			// Lógica: MARCAR COMO PAGO
+			var pendentes int
+			queryCheck := `
+				SELECT COUNT(1) 
+				FROM agendamentos 
+				WHERE recorrencia_group_id = $1 
+				  AND id != $2 
+				  AND valor_combinado > 0 
+				  AND pago_pelo_paciente = false
+			`
+			err = r.db.QueryRow(ctx, queryCheck, *a.RecorrenciaGroupID, id).Scan(&pendentes)
+			if err != nil {
+				return fmt.Errorf("erro ao verificar status do pacote: %w", err)
+			}
+
+			// Se não há nenhum outro pendente, atinge todos da recorrência
+			if pendentes == 0 {
+				_, err = r.db.Exec(ctx,
+					`UPDATE agendamentos SET pago_pelo_paciente = true WHERE recorrencia_group_id = $1`,
+					*a.RecorrenciaGroupID,
+				)
+				return err // Retorna aqui, pois já atualizou todos
+			}
+
+			// Se houver pendentes, o código continuará para o final da função
+			// e atualizará apenas o ID em questão.
+
+		} else {
+			// Lógica: DESMARCAR COMO PAGO
+			// Atualiza o agendamento atual (independente do valor) E
+			// todos os outros do mesmo grupo que tenham valor = 0
+			_, err = r.db.Exec(ctx, `
+				UPDATE agendamentos 
+				SET pago_pelo_paciente = false 
+				WHERE id = $1 
+				   OR (recorrencia_group_id = $2 AND valor_combinado = 0)
+			`, id, *a.RecorrenciaGroupID)
+
+			return err // Retorna aqui, pois já resolveu a regra do pacote para desmarcar
+		}
 	}
+
+	// Fallback padrão:
+	// 1. Se NÃO for pacote.
+	// 2. Se FOR pacote marcando como PAGO, mas ainda existirem outros pendentes de valor > 0.
 	_, err = r.db.Exec(ctx,
 		`UPDATE agendamentos SET pago_pelo_paciente = $1 WHERE id = $2`,
 		pago, id,
 	)
+
 	return err
 }
 
