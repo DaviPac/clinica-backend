@@ -38,6 +38,7 @@ func New(db *pgxpool.Pool) *chi.Mux {
 	agendamentoHandler := handler.NewAgendamentoHandler(agendamentoRepo, usuarioRepo)
 	servicoHandler := handler.NewServicoHandler(servicoRepo)
 	financeiroHandler := handler.NewFinanceiroHandler(financeiroRepo)
+	geminiApiHandler := handler.NewGeminiApiHandler()
 
 	// Rotas públicas
 	r.Post("/auth/login", authHandler.Login)
@@ -70,6 +71,9 @@ func New(db *pgxpool.Pool) *chi.Mux {
 		// Financeiro — profissional
 		r.Get("/financeiro/acertos", financeiroHandler.ListarAcertos)
 		r.Get("/financeiro/saldo-a-receber", financeiroHandler.SaldoAReceber)
+
+		//GEMINI API
+		r.Get("/gemini/api-key", geminiApiHandler.GetApiKey)
 
 		// Financeiro + Admin exclusivo
 		r.Group(func(r chi.Router) {
