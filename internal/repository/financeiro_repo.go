@@ -164,8 +164,7 @@ func (r *FinanceiroRepository) GerarRelatorio(ctx context.Context, periodo strin
 			COALESCE(SUM(a.valor_combinado * (1 - a.percentual_comissao_momento / 100.0)), 0)         AS a_receber
 		FROM agendamentos a
 		INNER JOIN usuarios u ON u.id = a.profissional_id
-		WHERE a.status = 'REALIZADO'
-		  AND a.pago_pelo_paciente = true
+		WHERE a.pago_pelo_paciente = true
 		  AND TO_CHAR(a.data_hora_inicio AT TIME ZONE 'UTC', 'YYYY-MM') = $1
 		GROUP BY u.id, u.nome
 		ORDER BY u.nome`
