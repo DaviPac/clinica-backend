@@ -20,7 +20,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-var connStr = BuildConnectionString();
+var connStr = builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException("Connection string 'Postgres' não configurada.");
 
 builder.Services.AddDbContext<AppDbContext>(opt => opt.UseNpgsql(connStr));
 
@@ -40,8 +41,8 @@ builder.Services.AddScoped<IFinanceiroRepository, FinanceiroRepository>();
 builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
 
 // --- Autenticação JWT ---
-var jwtSecret = builder.Configuration["JWT_SECRET"]
-    ?? throw new InvalidOperationException("JWT_SECRET não configurado.");
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key não configurado.");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -50,7 +51,7 @@ builder.Services
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateIssuer = false,
             ValidateAudience = false,
             ClockSkew = TimeSpan.Zero,
@@ -82,18 +83,3 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
-
-static string BuildConnectionString()
-{
-    var host     = Environment.GetEnvironmentVariable("DB_HOST")     ?? "localhost";
-    var port     = Environment.GetEnvironmentVariable("DB_PORT")     ?? "5432";
-    var user     = Environment.GetEnvironmentVariable("DB_USER")     ?? throw new InvalidOperationException("DB_USER não definido");
-    var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? throw new InvalidOperationException("DB_PASSWORD não definido");
-    var database = Environment.GetEnvironmentVariable("DB_NAME")     ?? throw new InvalidOperationException("DB_NAME não definido");
-    var sslMode  = Environment.GetEnvironmentVariable("DB_SSLMODE")  ?? "disable";
-
-    var sslModeNpgsql = sslMode.Equals("disable", StringComparison.OrdinalIgnoreCase)
-        ? "Disable" : "Require";
-
-    return $"Host={host};Port={port};Database={database};Username={user};Password={password};SslMode={sslModeNpgsql}";
-}
