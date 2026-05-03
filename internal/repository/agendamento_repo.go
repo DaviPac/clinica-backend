@@ -164,7 +164,7 @@ func (r *AgendamentoRepository) UpdateValorCombinadoRecorrente(ctx context.Conte
 	}
 	_, err = r.db.Exec(ctx,
 		`UPDATE agendamentos SET valor_combinado = ROUND($1, 2) WHERE recorrencia_group_id = $2 AND pago_pelo_paciente = FALSE`,
-		valor, id,
+		valor, a.RecorrenciaGroupID,
 	)
 	return err
 }
