@@ -14,7 +14,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")  // URL do frontend
+        policy.WithOrigins("http://localhost:4200", "https://clinica-frontend-dev.vercel.app", "https://instituto-cin.vercel.app")  // URL do frontend
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
