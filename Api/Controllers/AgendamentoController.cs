@@ -1,13 +1,13 @@
-using Api.Application.Services;
-using Api.Application.DTOs;
-using Api.Middleware;
+using Clinica.Domain;
+using Clinica.Application.Services;
+using Clinica.Application.DTOs;
+using Clinica.Middleware;
+using Clinica.Application.Common;
 using Microsoft.AspNetCore.Mvc;
-using Api.Domain;
 using Microsoft.AspNetCore.Authorization;
-using Api.Application.Common;
 using System.Globalization;
 
-namespace Api.Controllers;
+namespace Clinica.Api.Controllers;
 
 [ApiController]
 [Route("agendamentos")]

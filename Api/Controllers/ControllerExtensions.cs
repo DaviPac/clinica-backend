@@ -1,11 +1,7 @@
-using Api.Application.Services;
-using Api.Application.Common;
-using Api.Application.DTOs;
-using Api.Middleware;
+using Clinica.Application.Common;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 
-namespace Api.Controllers;
+namespace Clinica.Api.Controllers;
 
 public static class ControllerExtensions
 {

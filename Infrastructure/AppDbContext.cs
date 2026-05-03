@@ -1,7 +1,7 @@
-using Api.Domain;
+using Clinica.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Api.Infrastructure;
+namespace Clinica.Infrastructure;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {

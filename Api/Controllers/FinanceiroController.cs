@@ -1,12 +1,12 @@
-using Api.Application;
-using Api.Application.Common;
-using Api.Application.Services;
-using Api.Domain;
-using Api.Middleware;
+using Clinica.Application;
+using Clinica.Application.Common;
+using Clinica.Application.Services;
+using Clinica.Domain;
+using Clinica.Middleware;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Api.Controllers;
+namespace Clinica.Api.Controllers;
 
 [ApiController]
 [Route("financeiro")]

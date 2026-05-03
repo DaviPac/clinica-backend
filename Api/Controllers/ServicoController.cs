@@ -1,11 +1,11 @@
-using Api.Application.Services;
-using Api.Application.DTOs;
-using Api.Middleware;
+using Clinica.Application.Services;
+using Clinica.Application.DTOs;
+using Clinica.Middleware;
 using Microsoft.AspNetCore.Mvc;
-using Api.Domain;
+using Clinica.Domain;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Api.Controllers;
+namespace Clinica.Api.Controllers;
 
 [ApiController]
 [Route("servicos")]

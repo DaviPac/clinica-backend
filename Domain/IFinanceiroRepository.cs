@@ -1,4 +1,4 @@
-namespace Api.Domain;
+namespace Clinica.Domain;
 
 public interface IFinanceiroRepository
 {

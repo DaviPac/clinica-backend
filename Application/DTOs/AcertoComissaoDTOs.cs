@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Api.Application.DTOs;
+namespace Clinica.Application.DTOs;
 
 public record CriarAcertoComissaoRequest(
     [property: JsonPropertyName("profissional_id")]

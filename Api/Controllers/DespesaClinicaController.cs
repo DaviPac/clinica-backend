@@ -1,10 +1,10 @@
-using Api.Application.DTOs;
-using Api.Application.Services;
-using Api.Domain;
+using Clinica.Application.DTOs;
+using Clinica.Application.Services;
+using Clinica.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Api.Controllers;
+namespace Clinica.Api.Controllers;
 
 [ApiController]
 [Route("financeiro/despesas")]

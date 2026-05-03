@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Api.Application;
+namespace Clinica.Application;
 
 public record SaldoAReceberResponse(
     [property: JsonPropertyName("profissional_id")]

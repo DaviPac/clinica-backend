@@ -1,11 +1,11 @@
-using Api.Application.Services;
-using Api.Application.DTOs;
+using Clinica.Application.Services;
+using Clinica.Application.DTOs;
 using Microsoft.AspNetCore.Mvc;
-using Api.Domain;
+using Clinica.Domain;
 using Microsoft.AspNetCore.Authorization;
 using System.Text.RegularExpressions;
 
-namespace Api.Controllers;
+namespace Clinica.Api.Controllers;
 
 [ApiController]
 [Route("financeiro/acertos")]

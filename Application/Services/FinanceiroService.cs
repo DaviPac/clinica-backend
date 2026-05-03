@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
-using Api.Application.Common;
-using Api.Domain;
+using Clinica.Application.Common;
+using Clinica.Domain;
 
-namespace Api.Application.Services;
+namespace Clinica.Application.Services;
 
 public partial class FinanceiroService(IFinanceiroRepository repo) : IFinanceiroService
 {

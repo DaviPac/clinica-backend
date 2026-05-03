@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace Api.Infrastructure;
+namespace Clinica.Infrastructure;
 
 public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {

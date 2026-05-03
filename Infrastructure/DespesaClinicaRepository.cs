@@ -1,8 +1,8 @@
-using Api.Application.Common;
-using Api.Domain;
+using Clinica.Application.Common;
+using Clinica.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Api.Infrastructure;
+namespace Clinica.Infrastructure;
 
 public class DespesaClinicaRepository(AppDbContext db) : IDespesaClinicaRepository
 {

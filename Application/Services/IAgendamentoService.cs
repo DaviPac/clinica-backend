@@ -1,8 +1,8 @@
-using Api.Application.Common;
-using Api.Application.DTOs;
-using Api.Domain;
+using Clinica.Application.Common;
+using Clinica.Application.DTOs;
+using Clinica.Domain;
 
-namespace Api.Application.Services;
+namespace Clinica.Application.Services;
 
 public interface IAgendamentoService
 {

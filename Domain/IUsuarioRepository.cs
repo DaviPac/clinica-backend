@@ -1,6 +1,6 @@
-using Api.Application.Common;
+using Clinica.Application.Common;
 
-namespace Api.Domain;
+namespace Clinica.Domain;
 
 public interface IUsuarioRepository
 {

@@ -1,6 +1,6 @@
-using Api.Domain;
+using Clinica.Domain;
 
-namespace Api.Application.DTOs;
+namespace Clinica.Application.DTOs;
 
 public record RegistrarUsuarioRequest(
     string  Nome,

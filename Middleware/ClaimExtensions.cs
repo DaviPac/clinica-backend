@@ -1,7 +1,7 @@
-using Api.Domain;
+using Clinica.Domain;
 using System.Security.Claims;
 
-namespace Api.Middleware;
+namespace Clinica.Middleware;
 
 public static class ClaimsExtensions
 {

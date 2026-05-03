@@ -1,6 +1,6 @@
-using Api.Application.Services;
-using Api.Domain;
-using Api.Infrastructure;
+using Clinica.Application.Services;
+using Clinica.Domain;
+using Clinica.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;

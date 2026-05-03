@@ -1,7 +1,7 @@
-using Api.Application.Common;
-using Api.Application.DTOs;
+using Clinica.Application.Common;
+using Clinica.Application.DTOs;
 
-namespace Api.Domain;
+namespace Clinica.Domain;
 
 public interface IServicoRepository
 {

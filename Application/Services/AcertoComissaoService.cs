@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
-using Api.Application.Common;
-using Api.Application.DTOs;
-using Api.Domain;
+using Clinica.Application.Common;
+using Clinica.Application.DTOs;
+using Clinica.Domain;
 
-namespace Api.Application.Services;
+namespace Clinica.Application.Services;
 
 public partial class AcertoComissaoService(IAcertoComissaoRepository repo) : IAcertoComissaoService
 {

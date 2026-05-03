@@ -1,12 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Api.Application.Common;
-using Api.Application.DTOs;
-using Api.Domain;
+using Clinica.Application.Common;
+using Clinica.Application.DTOs;
+using Clinica.Domain;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Api.Application.Services;
+namespace Clinica.Application.Services;
 
 public class AuthService(IUsuarioRepository repo, IConfiguration config) : IAuthService
 {

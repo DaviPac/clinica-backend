@@ -1,9 +1,9 @@
-using Api.Application.Common;
-using Api.Application.DTOs;
-using Api.Domain;
+using Clinica.Application.Common;
+using Clinica.Application.DTOs;
+using Clinica.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Api.Infrastructure;
+namespace Clinica.Infrastructure;
 
 public class ServicoRepository(AppDbContext db) : IServicoRepository
 {

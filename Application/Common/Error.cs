@@ -1,4 +1,4 @@
-namespace Api.Application.Common;
+namespace Clinica.Application.Common;
 
 public enum ErrorType 
 { 

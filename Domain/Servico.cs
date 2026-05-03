@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Api.Domain;
+namespace Clinica.Domain;
 
 public class Servico
 {
