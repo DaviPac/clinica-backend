@@ -10,4 +10,5 @@ public interface IAuthService
     Task<Result<LoginResponse>> LoginAsync(LoginRequest req, CancellationToken ct);
     Task<IEnumerable<Usuario>> ListarUsuariosAsync(CancellationToken ct);
     Task<Result<Usuario>> ObterUsuarioPorIdAsync(int id, CancellationToken ct);
+    Task<Result> MudarSenhaAsync(int id, string senhaAntiga, string novaSenha, CancellationToken ct = default);
 }

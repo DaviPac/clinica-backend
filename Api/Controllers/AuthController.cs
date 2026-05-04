@@ -42,6 +42,17 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(usuarios.Select(UsuarioToResponse));
     }
 
+    [HttpPost("me/password")]
+    [Authorize]
+    public async Task<IActionResult> MudarSenha([FromBody] MudarSenhaRequest req, CancellationToken ct)
+    {
+        var userId = HttpContext.GetUserId();
+        var result = await authService.MudarSenhaAsync(userId, req.SenhaAntiga, req.NovaSenha, ct);
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return Accepted();
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> Me(CancellationToken ct)

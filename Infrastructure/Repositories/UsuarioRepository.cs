@@ -93,7 +93,6 @@ public class UsuarioRepository(AppDbContext db) : IUsuarioRepository
         return CheckAffectedRows(affected);
     }
 
-    // Substituímos o ThrowIfNotFound por um método que retorna Result
     private static Result CheckAffectedRows(int affected)
     {
         if (affected == 0)

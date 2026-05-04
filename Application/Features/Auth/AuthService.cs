@@ -81,6 +81,19 @@ public class AuthService(IUsuarioRepository repo, IConfiguration config) : IAuth
         return await repo.FindByIdAsync(id, ct);
     }
 
+    public async Task<Result> MudarSenhaAsync(int id, string senhaAntiga, string novaSenha, CancellationToken ct = default)
+    {
+        if (novaSenha.Length < 5)
+            return Errors.ValidationFailed("Senha deve ter ao menos 5 dígitos.");
+        var usuarioResult = await repo.FindByIdAsync(id, ct);
+        if (!usuarioResult.IsSuccess)
+            return usuarioResult.Error!;
+        if (!BCrypt.Net.BCrypt.Verify(senhaAntiga, usuarioResult.Value!.SenhaHash))
+            return Errors.InvalidCredentials;
+        var novaSenhaHash = BCrypt.Net.BCrypt.HashPassword(novaSenha);
+        return await repo.UpdatePasswordAsync(id, novaSenhaHash, ct);
+    }
+
     private string GerarToken(Usuario u)
     {
         var secret = config["Jwt:Key"] ?? throw new InvalidOperationException("JWT_SECRET não configurado.");
