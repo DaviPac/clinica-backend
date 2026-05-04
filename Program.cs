@@ -1,11 +1,19 @@
 using Clinica.Application.Services;
-using Clinica.Domain;
 using Clinica.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
+using Clinica.Domain.Repositories;
+using Clinica.Application.Interfaces;
+using Clinica.Application.Features.Pacientes;
+using Clinica.Application.Features.Servicos;
+using Clinica.Application.Features.Agendamentos;
+using Clinica.Infrastructure.Repositories;
+using Clinica.Application.Features.AcertosComissao;
+using Clinica.Application.Features.Financeiro;
+using Clinica.Domain.Enums;
 
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 

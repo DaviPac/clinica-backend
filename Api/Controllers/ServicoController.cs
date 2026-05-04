@@ -1,9 +1,10 @@
-using Clinica.Application.Services;
-using Clinica.Application.DTOs;
-using Clinica.Middleware;
 using Microsoft.AspNetCore.Mvc;
-using Clinica.Domain;
 using Microsoft.AspNetCore.Authorization;
+using Clinica.Application.Interfaces;
+using Clinica.Application.Features.Servicos.DTOs;
+using Clinica.Domain.Enums;
+using Clinica.Domain.Entities;
+using Clinica.Api.Extensions;
 
 namespace Clinica.Api.Controllers;
 

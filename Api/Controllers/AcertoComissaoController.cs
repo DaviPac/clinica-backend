@@ -1,9 +1,11 @@
-using Clinica.Application.Services;
-using Clinica.Application.DTOs;
 using Microsoft.AspNetCore.Mvc;
-using Clinica.Domain;
 using Microsoft.AspNetCore.Authorization;
 using System.Text.RegularExpressions;
+using Clinica.Application.Interfaces;
+using Clinica.Application.Features.AcertosComissao.DTOs;
+using Clinica.Domain.Entities;
+using Clinica.Domain.Filters;
+using Clinica.Api.Extensions;
 
 namespace Clinica.Api.Controllers;
 
@@ -18,7 +20,7 @@ public partial class AcertoComissaoController(IAcertoComissaoService acertoComis
         var result = await acertoComissaoService.CriarAsync(req, ct);
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
-        return StatusCode(201, result.Value);
+        return StatusCode(201, AcertoToResponse(result.Value!));
     }
     [HttpGet]
     [Authorize]

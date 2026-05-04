@@ -1,9 +1,10 @@
-using Clinica.Application.Services;
-using Clinica.Application.DTOs;
-using Clinica.Middleware;
 using Microsoft.AspNetCore.Mvc;
-using Clinica.Domain;
 using Microsoft.AspNetCore.Authorization;
+using Clinica.Application.Interfaces;
+using Clinica.Application.Features.Pacientes.DTOs;
+using Clinica.Domain.Enums;
+using Clinica.Domain.Entities;
+using Clinica.Api.Extensions;
 
 namespace Clinica.Api.Controllers;
 
@@ -28,7 +29,7 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
         var result = await pacienteService.CriarAsync(profissionalId, req, ct);
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
-        return Ok(result.Value);
+        return Ok(PacienteToResponse(result.Value!));
     }
     [HttpGet]
     [Authorize]
@@ -48,7 +49,7 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
             pacientes = await pacienteService.ListAllAsync(ct);
         else
             pacientes = await pacienteService.ListByProfissionalAsync(profissionalId, ct);
-        return Ok(pacientes);
+        return Ok(pacientes.Select(PacienteToResponse));
     }
     [HttpGet("{id}")]
     [Authorize]
@@ -64,6 +65,15 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
         if (!paciente.IsSuccess)
             return this.HandleError(paciente.Error!);
 
-        return Ok(paciente.Value);
+        return Ok(PacienteToResponse(paciente.Value!));
     }
+
+    private static PacienteResponse PacienteToResponse(Paciente p) => new(
+        p.Id,
+        p.Nome,
+        p.Cpf,
+        p.Telefone,
+        p.DataNascimento,
+        p.CriadoEm
+    );
 }

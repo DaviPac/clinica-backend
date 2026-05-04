@@ -1,4 +1,4 @@
-using Clinica.Domain;
+using Clinica.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Clinica.Infrastructure;

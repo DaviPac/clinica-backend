@@ -1,8 +1,9 @@
-using Clinica.Application.Services;
-using Clinica.Application.DTOs;
-using Clinica.Middleware;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Clinica.Application.Interfaces;
+using Clinica.Application.Features.Auth.DTOs;
+using Clinica.Domain.Entities;
+using Clinica.Api.Extensions;
 
 namespace Clinica.Api.Controllers;
 
@@ -19,7 +20,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
 
-        return CreatedAtAction(nameof(Me), null, result.Value);
+        return CreatedAtAction(nameof(Me), null, UsuarioToResponse(result.Value!));
     }
 
     [HttpPost("login")]
@@ -38,7 +39,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     public async Task<IActionResult> ListarUsuarios(CancellationToken ct)
     {
         var usuarios = await authService.ListarUsuariosAsync(ct);
-        return Ok(usuarios);
+        return Ok(usuarios.Select(UsuarioToResponse));
     }
 
     [HttpGet("me")]
@@ -52,6 +53,15 @@ public class AuthController(IAuthService authService) : ControllerBase
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
 
-        return Ok(result.Value);
+        return Ok(UsuarioToResponse(result.Value!));
     }
+    private static UsuarioResponse UsuarioToResponse(Usuario u) => new(
+        u.Id,
+        u.Nome,
+        u.Email,
+        u.Role.ToString(),
+        u.Profissao,
+        u.TaxaComissaoPadrao,
+        u.CriadoEm
+    );
 }

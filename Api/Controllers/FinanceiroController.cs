@@ -1,8 +1,8 @@
-using Clinica.Application;
 using Clinica.Application.Common;
-using Clinica.Application.Services;
-using Clinica.Domain;
-using Clinica.Middleware;
+using Clinica.Application.Features.Financeiro.DTOs;
+using Clinica.Application.Interfaces;
+using Clinica.Domain.Enums;
+using Clinica.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

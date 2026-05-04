@@ -1,11 +1,13 @@
-using Clinica.Domain;
-using Clinica.Application.Services;
-using Clinica.Application.DTOs;
-using Clinica.Middleware;
 using Clinica.Application.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Globalization;
+using Clinica.Application.Interfaces;
+using Clinica.Application.Features.Agendamentos.DTOs;
+using Clinica.Domain.Enums;
+using Clinica.Domain.Entities;
+using Clinica.Domain.Filters;
+using Clinica.Api.Extensions;
 
 namespace Clinica.Api.Controllers;
 
