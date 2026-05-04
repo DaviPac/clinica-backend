@@ -42,7 +42,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(usuarios.Select(UsuarioToResponse));
     }
 
-    [HttpPost("me/password")]
+    [HttpPost("me/senha")]
     [Authorize]
     public async Task<IActionResult> MudarSenha([FromBody] MudarSenhaRequest req, CancellationToken ct)
     {

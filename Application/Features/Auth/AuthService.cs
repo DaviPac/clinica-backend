@@ -89,7 +89,7 @@ public class AuthService(IUsuarioRepository repo, IConfiguration config) : IAuth
         if (!usuarioResult.IsSuccess)
             return usuarioResult.Error!;
         if (!BCrypt.Net.BCrypt.Verify(senhaAntiga, usuarioResult.Value!.SenhaHash))
-            return Errors.InvalidCredentials;
+            return Errors.ValidationFailed("Senha incorreta.");
         var novaSenhaHash = BCrypt.Net.BCrypt.HashPassword(novaSenha);
         return await repo.UpdatePasswordAsync(id, novaSenhaHash, ct);
     }
