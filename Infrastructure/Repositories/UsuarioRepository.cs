@@ -44,7 +44,6 @@ public class UsuarioRepository(AppDbContext db) : IUsuarioRepository
             .OrderBy(u => u.Nome)
             .ToListAsync(ct);
 
-        // A conversão implícita transforma a lista em Result<IEnumerable<Usuario>>
         return usuarios; 
     }
 
