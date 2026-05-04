@@ -83,7 +83,7 @@ public class AuthService(IUsuarioRepository repo, IConfiguration config) : IAuth
 
     private string GerarToken(Usuario u)
     {
-        var secret = config["JWT_SECRET"] ?? throw new InvalidOperationException("JWT_SECRET não configurado.");
+        var secret = config["Jwt:Key"] ?? throw new InvalidOperationException("JWT_SECRET não configurado.");
         var key    = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var creds  = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

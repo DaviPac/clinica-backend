@@ -52,13 +52,13 @@ public class PacienteService(IPacienteRepository repo) : IPacienteService
         if (!vinculoResult.IsSuccess) return vinculoResult.Error!;
         return paciente;
     }
-    public async Task<IEnumerable<Paciente>> ListByProfissionalAsync(int profissionalId, CancellationToken ct = default)
+    public async Task<IEnumerable<Paciente>> ListByProfissionalAsync(int profissionalId, bool mostrarInativos, CancellationToken ct = default)
     {
-        return await repo.ListByProfissionalAsync(profissionalId, ct);
+        return await repo.ListByProfissionalAsync(profissionalId, mostrarInativos, ct);
     }
-    public async Task<IEnumerable<Paciente>> ListAllAsync(CancellationToken ct = default)
+    public async Task<IEnumerable<Paciente>> ListAllAsync(bool mostrarInativos, CancellationToken ct = default)
     {
-        return await repo.ListAllAsync(ct);
+        return await repo.ListAllAsync(mostrarInativos, ct);
     }
     public async Task<Result<Paciente>> FindByIdAsync(int id, CancellationToken ct = default)
     {
@@ -67,5 +67,17 @@ public class PacienteService(IPacienteRepository repo) : IPacienteService
     public async Task<Result<Paciente>> FindByIdAndProfissionalAsync(int id, int profissionalId, CancellationToken ct = default)
     {
         return await repo.FindByIdAndProfissionalAsync(id, profissionalId, ct);
+    }
+    public async Task<Result> DesativarAsync(int id, CancellationToken ct = default)
+    {
+        return await repo.SetAtivoAsync(id, false, ct);
+    }
+    public async Task<Result> AtivarAsync(int id, CancellationToken ct = default)
+    {
+        return await repo.SetAtivoAsync(id, true, ct);
+    }
+    public async Task<Result> RemoverVinculoAsync(int pacienteId, int profissionalId, CancellationToken ct = default)
+    {
+        return await repo.DeleteVinculoAsync(pacienteId, profissionalId, ct);
     }
 }

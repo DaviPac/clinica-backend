@@ -53,22 +53,29 @@ public class PacienteRepository(AppDbContext db) : IPacienteRepository
         return paciente;
     }
 
-    public async Task<IEnumerable<Paciente>> ListByProfissionalAsync(int profissionalId, CancellationToken ct = default)
+    public async Task<IEnumerable<Paciente>> ListByProfissionalAsync(int profissionalId, bool showInativos, CancellationToken ct = default)
     {
-        var pacientes = await db.Pacientes
-          .AsNoTracking()
-          .Where(p => p.ProfissionaisVinculados.Any(pp => pp.ProfissionalId == profissionalId))
-          .ToListAsync(ct);
-
-        return pacientes;
+        if (showInativos)
+            return await db.Pacientes
+                .AsNoTracking()
+                .Where(p => p.ProfissionaisVinculados.Any(pp => pp.ProfissionalId == profissionalId))
+                .ToListAsync(ct);
+                
+        return await db.Pacientes
+            .AsNoTracking()
+            .Where(p => p.Ativo && p.ProfissionaisVinculados.Any(pp => pp.ProfissionalId == profissionalId))
+            .ToListAsync(ct);
     }
-    public async Task<IEnumerable<Paciente>> ListAllAsync(CancellationToken ct = default)
+    public async Task<IEnumerable<Paciente>> ListAllAsync(bool showInativos, CancellationToken ct = default)
     {
-        var pacientes = await db.Pacientes
-          .AsNoTracking()
-          .ToListAsync(ct);
-
-        return pacientes;
+        if (showInativos)
+            return await db.Pacientes
+                .AsNoTracking()
+                .ToListAsync(ct);
+        return await db.Pacientes
+            .AsNoTracking()
+            .Where(p => p.Ativo)
+            .ToListAsync(ct);
     }
     public async Task<Result<Paciente>> FindByIdIncludingProfissionaisAsync(int id, CancellationToken ct = default)
     {
@@ -92,5 +99,23 @@ public class PacienteRepository(AppDbContext db) : IPacienteRepository
             return Errors.PatientNotFound;
         
         return paciente;
+    }
+    public async Task<Result> SetAtivoAsync(int id, bool ativo, CancellationToken ct = default)
+    {
+        var rows = await db.Pacientes
+            .Where(p => p.Id == id)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Ativo, ativo), ct);
+        if (rows == 0)
+            return Errors.PatientNotFound;
+        return Result.Success();
+    }
+    public async Task<Result> DeleteVinculoAsync(int pacienteId, int profissionalId, CancellationToken ct = default)
+    {
+        var rows = await db.PacienteProfissionais
+            .Where(pp => pp.PacienteId == pacienteId && pp.ProfissionalId == profissionalId)
+            .ExecuteDeleteAsync(ct);
+        if (rows == 0)
+            return Errors.PatientNotFound;
+        return Result.Success();
     }
 }

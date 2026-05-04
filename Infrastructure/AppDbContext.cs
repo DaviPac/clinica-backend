@@ -67,6 +67,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(p => p.DataNascimento)
              .HasColumnName("data_nascimento");
 
+            e.Property(p => p.Ativo)
+             .HasColumnName("ativo")
+             .HasDefaultValue(true);
+
             e.Property(p => p.CriadoEm)
              .HasColumnName("criado_em")
              .HasDefaultValueSql("now()")

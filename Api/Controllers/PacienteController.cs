@@ -36,7 +36,8 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
     public async Task<IActionResult> Listar(
         [FromQuery(Name = "profissional_id")] string? profissionalIdQuery,
         CancellationToken ct,
-        [FromQuery(Name = "todos")] bool mostrarTodos = false
+        [FromQuery(Name = "todos")] bool mostrarTodos = false,
+        [FromQuery(Name = "inativos")] bool mostrarInativos = false
     )
     {
         var profissionalId = HttpContext.GetUserId();
@@ -46,9 +47,9 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
             
         IEnumerable<Paciente> pacientes;
         if (mostrarTodos && role == Role.ADMIN)
-            pacientes = await pacienteService.ListAllAsync(ct);
+            pacientes = await pacienteService.ListAllAsync(mostrarInativos, ct);
         else
-            pacientes = await pacienteService.ListByProfissionalAsync(profissionalId, ct);
+            pacientes = await pacienteService.ListByProfissionalAsync(profissionalId, mostrarInativos, ct);
         return Ok(pacientes.Select(PacienteToResponse));
     }
     [HttpGet("{id}")]
@@ -67,6 +68,29 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
 
         return Ok(PacienteToResponse(paciente.Value!));
     }
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> RemoverPorId(int id, CancellationToken ct)
+    {
+        var profissionalId = HttpContext.GetUserId();
+        var role = HttpContext.GetRole();
+
+        var result = role == Role.ADMIN ? 
+            await pacienteService.DesativarAsync(id, ct) : 
+            await pacienteService.RemoverVinculoAsync(id, profissionalId, ct);
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return NoContent();
+    }
+    [HttpPatch("{id}/ativar")]
+    [Authorize(policy: "AdminOnly")]
+    public async Task<IActionResult> AtivarPorId(int id, CancellationToken ct)
+    {
+        var result = await pacienteService.AtivarAsync(id, ct);
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return NoContent();
+    }
 
     private static PacienteResponse PacienteToResponse(Paciente p) => new(
         p.Id,
@@ -74,6 +98,7 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
         p.Cpf,
         p.Telefone,
         p.DataNascimento,
+        p.Ativo,
         p.CriadoEm
     );
 }
