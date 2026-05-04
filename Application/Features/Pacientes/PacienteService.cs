@@ -16,6 +16,8 @@ public class PacienteService(IPacienteRepository repo) : IPacienteService
         var cpf = req.Cpf;
         if (string.IsNullOrWhiteSpace(req.Cpf))
             cpf = null;
+        if (cpf?.Length > 14)
+            return Errors.ValidationFailed("CPF deve ter no máximo 14 dígitos.");
         var telefone = req.Telefone;
         if (string.IsNullOrWhiteSpace(req.Telefone))
             telefone = null;
