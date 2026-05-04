@@ -44,6 +44,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         [FromQuery] string? filtro,
         [FromQuery] string? de,
         [FromQuery] string? ate,
+        [FromQuery(Name = "profissional_id")] string? profissionalIdQuery,
         CancellationToken ct)
     {
         var profissionalId = HttpContext.GetUserId();
@@ -51,6 +52,8 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         var mostrarTodos = todos ?? false;
 
         var filtroAg = new FiltroAgendamento();
+        if (isAdmin && int.TryParse(profissionalIdQuery, out int parsedId))
+            profissionalId = parsedId;
 
         if (!isAdmin || !mostrarTodos)
             filtroAg.ProfissionalId = profissionalId;
