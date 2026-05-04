@@ -8,6 +8,6 @@ public class Paciente
     public string? Telefone { get; set; }
     public DateOnly? DataNascimento { get; set; }
     public DateTime CriadoEm { get; set; }
-    public bool Ativo { get; set; }
+    public bool Ativo { get; set; } = true;
     public ICollection<PacienteProfissional> ProfissionaisVinculados { get; set; } = [];
 }
