@@ -93,7 +93,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
 
-        return Ok(result.Value);
+        return Ok(AgendamentoToResponse(result.Value!));
     }
     [HttpPatch("{id}/status")]
     [Authorize]
