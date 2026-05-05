@@ -107,7 +107,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
             result = await agendamentoService.AtualizarStatusParaProfissionalAsync(id, HttpContext.GetUserId(), req.Status, ct);
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
-        return Ok(result.Value!);
+        return Ok(AgendamentoToResponse(result.Value!));
     }
     [HttpPatch("{id}/pagamento")]
     [Authorize]
@@ -121,7 +121,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
             result = await agendamentoService.AtualizarPagamentoParaProfissionalAsync(id, HttpContext.GetUserId(), req.PagoPeloPaciente, ct);
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
-        return Ok(result.Value!);
+        return Ok(AgendamentoToResponse(result.Value!));
     }
     [HttpPatch("{id}/valor-combinado")]
     [Authorize]
@@ -146,7 +146,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
                 result = await agendamentoService.AtualizarValorCombinadoParaProfissionalAsync(id, HttpContext.GetUserId(), req.ValorCombinado, ct);
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
-        return Ok(result.Value!);
+        return Ok(AgendamentoToResponse(result.Value!));
     }
     [HttpDelete("recorrencia/{recorrenciaGroupId}")]
     [Authorize]
@@ -193,9 +193,11 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         return new DateTimeOffset(data.Year, data.Month, data.Day, 23, 59, 59, TimeSpan.Zero);
     }
 
+    private static readonly TimeSpan FusoBrasilia = TimeSpan.FromHours(-3);
+
     private static AgendamentoResponse AgendamentoToResponse(Agendamento a)
         => new(a.Id, a.PacienteId, a.ProfissionalId, a.ServicoId,
-            a.DataHoraInicio, a.DataHoraFim, a.ValorCombinado, a.ValorPacote,
+            a.DataHoraInicio.ToOffset(FusoBrasilia), a.DataHoraFim.ToOffset(FusoBrasilia), a.ValorCombinado, a.ValorPacote,
             a.PercentualComissaoMomento, a.Status.ToString(), a.PagoPeloPaciente,
             a.RecorrenciaGroupId, a.CriadoEm);
 
