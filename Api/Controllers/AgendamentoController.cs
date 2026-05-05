@@ -19,7 +19,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
     [Authorize]
     public async Task<IActionResult> Criar(
         [FromBody] CriarAgendamentoRequest req,
-        [FromQuery(Name = "profissionalID")] string? profissionalIdQuery,
+        [FromQuery(Name = "profissional_id")] string? profissionalIdQuery,
         CancellationToken ct
     )
     {
