@@ -6,7 +6,7 @@ namespace Clinica.Application.Interfaces;
 
 public interface IPacienteService
 {
-    Task<Result<Paciente>> CriarAsync(int profissionalId, CriarPacienteRequest req, CancellationToken ct = default);
+    Task<Result<(Paciente paciente, bool existe)>> CriarAsync(int profissionalId, CriarPacienteRequest req, CancellationToken ct = default);
     Task<IEnumerable<Paciente>> ListByProfissionalAsync(int profissionalId, bool mostrarInativos, CancellationToken ct = default);
     Task<IEnumerable<Paciente>> ListAllAsync(bool mostrarInativos, CancellationToken ct = default);
     Task<Result<Paciente>> FindByIdAsync(int id, CancellationToken ct = default);

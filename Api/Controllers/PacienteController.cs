@@ -29,7 +29,8 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
         var result = await pacienteService.CriarAsync(profissionalId, req, ct);
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
-        return Ok(PacienteToResponse(result.Value!));
+        var status = result.Value.existe ? 200 : 201;
+        return StatusCode(status, PacienteToResponse(result.Value.paciente));
     }
     [HttpGet]
     [Authorize]

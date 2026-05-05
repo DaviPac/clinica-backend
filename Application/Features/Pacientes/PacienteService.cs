@@ -9,7 +9,7 @@ namespace Clinica.Application.Features.Pacientes;
 
 public class PacienteService(IPacienteRepository repo) : IPacienteService
 {
-    public async Task<Result<Paciente>> CriarAsync(int profissionalId, CriarPacienteRequest req, CancellationToken ct = default)
+    public async Task<Result<(Paciente paciente, bool existe)>> CriarAsync(int profissionalId, CriarPacienteRequest req, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(req.Nome))
             return Errors.ValidationFailed("Nome é obrigatório.");
@@ -38,7 +38,7 @@ public class PacienteService(IPacienteRepository repo) : IPacienteService
             {
                 var vinculo = await repo.VincularProfissionalAsync(existente.Value!.Id, profissionalId, ct);
                 if (!vinculo.IsSuccess) return vinculo.Error!;
-                return existente;
+                return (existente.Value, true);
             }
         }
         var paciente = new Paciente
@@ -52,7 +52,7 @@ public class PacienteService(IPacienteRepository repo) : IPacienteService
         await repo.CreateAsync(paciente, ct);
         var vinculoResult = await repo.VincularProfissionalAsync(paciente.Id, profissionalId, ct);
         if (!vinculoResult.IsSuccess) return vinculoResult.Error!;
-        return paciente;
+        return (paciente, false);
     }
     public async Task<IEnumerable<Paciente>> ListByProfissionalAsync(int profissionalId, bool mostrarInativos, CancellationToken ct = default)
     {
