@@ -77,6 +77,9 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
         if (filtro.ProfissionalId is int profId)
             query = query.Where(a => a.ProfissionalId == profId);
 
+        if (filtro.PacienteId is int pacId)
+            query = query.Where(a => a.PacienteId == pacId);
+
         if (filtro.Status is StatusAgendamento status)
             query = query.Where(a => a.Status == status);
 

@@ -5,6 +5,7 @@ using Clinica.Application.Features.Pacientes.DTOs;
 using Clinica.Domain.Enums;
 using Clinica.Domain.Entities;
 using Clinica.Api.Extensions;
+using Clinica.Application.Common;
 
 namespace Clinica.Api.Controllers;
 
@@ -31,6 +32,26 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
             return this.HandleError(result.Error!);
         var status = result.Value.existe ? 200 : 201;
         return StatusCode(status, PacienteToResponse(result.Value.paciente));
+    }
+    [HttpPatch("{id}")]
+    [Authorize]
+    public async Task<IActionResult> Atualizar(
+        int id,
+        [FromBody] AtualizarPacienteRequest req,
+        CancellationToken ct
+    )
+    {
+        var role = HttpContext.GetRole();
+
+        Result<Paciente> result;
+        if (role == Role.ADMIN)
+            result = await pacienteService.AtualizarPacienteAsync(id, req, ct);
+        else
+            result = await pacienteService.AtualizarPacientePorProfissionalAsync(id, HttpContext.GetUserId(), req, ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return Ok(PacienteToResponse(result.Value!));
     }
     [HttpGet]
     [Authorize]
@@ -100,6 +121,8 @@ public class PacienteController(IPacienteService pacienteService) : ControllerBa
         p.Telefone,
         p.DataNascimento,
         p.Ativo,
-        p.CriadoEm
+        p.CriadoEm,
+        p.EnderecoCompleto,
+        p.Rg
     );
 }

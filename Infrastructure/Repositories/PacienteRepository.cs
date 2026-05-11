@@ -41,7 +41,14 @@ public class PacienteRepository(AppDbContext db) : IPacienteRepository
 
         return paciente;
     }
+    public async Task<Result<Paciente>> FindByIdTrackingAsync(int id, CancellationToken ct = default)
+    {
+        var paciente = await db.Pacientes.FirstOrDefaultAsync(p => p.Id == id, ct);
 
+        if (paciente is null) return Errors.PatientNotFound;
+
+        return paciente;
+    }
     public async Task<Result<Paciente>> FindByCpfAsync(string cpf, CancellationToken ct = default)
     {
         var paciente = await db.Pacientes
@@ -92,6 +99,17 @@ public class PacienteRepository(AppDbContext db) : IPacienteRepository
     {
         var paciente = await db.Pacientes
           .AsNoTracking()
+          .Where(p => p.ProfissionaisVinculados.Any(pp => pp.ProfissionalId == profissionalId))
+          .FirstOrDefaultAsync(p => p.Id == id, ct);
+
+        if (paciente is null)
+            return Errors.PatientNotFound;
+        
+        return paciente;
+    }
+    public async Task<Result<Paciente>> FindByIdAndProfissionalTrackingAsync(int id, int profissionalId, CancellationToken ct = default)
+    {
+        var paciente = await db.Pacientes
           .Where(p => p.ProfissionaisVinculados.Any(pp => pp.ProfissionalId == profissionalId))
           .FirstOrDefaultAsync(p => p.Id == id, ct);
 

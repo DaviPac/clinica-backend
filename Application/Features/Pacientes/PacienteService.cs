@@ -7,7 +7,7 @@ using Clinica.Domain.Repositories;
 
 namespace Clinica.Application.Features.Pacientes;
 
-public class PacienteService(IPacienteRepository repo) : IPacienteService
+public class PacienteService(IPacienteRepository repo, IUnitOfWork unitOfWork) : IPacienteService
 {
     public async Task<Result<(Paciente paciente, bool existe)>> CriarAsync(int profissionalId, CriarPacienteRequest req, CancellationToken ct = default)
     {
@@ -18,6 +18,12 @@ public class PacienteService(IPacienteRepository repo) : IPacienteService
             cpf = null;
         if (cpf?.Length > 14)
             return Errors.ValidationFailed("CPF deve ter no máximo 14 dígitos.");
+        var rg = req.Rg;
+        if (string.IsNullOrWhiteSpace(req.Rg))
+            rg = null;
+        var enderecoCompleto = req.EnderecoCompleto;
+        if (string.IsNullOrWhiteSpace(req.EnderecoCompleto))
+            enderecoCompleto = null;
         var telefone = req.Telefone;
         if (string.IsNullOrWhiteSpace(req.Telefone))
             telefone = null;
@@ -45,6 +51,8 @@ public class PacienteService(IPacienteRepository repo) : IPacienteService
         {
             Nome = req.Nome,
             Cpf = cpf,
+            Rg = rg,
+            EnderecoCompleto = enderecoCompleto,
             Telefone = telefone,
             DataNascimento = dataNascimento
         };
@@ -81,5 +89,59 @@ public class PacienteService(IPacienteRepository repo) : IPacienteService
     public async Task<Result> RemoverVinculoAsync(int pacienteId, int profissionalId, CancellationToken ct = default)
     {
         return await repo.DeleteVinculoAsync(pacienteId, profissionalId, ct);
+    }
+    public async Task<Result<Paciente>> AtualizarPacienteAsync(int pacienteId, AtualizarPacienteRequest req, CancellationToken ct = default)
+    {
+        var result = await repo.FindByIdTrackingAsync(pacienteId, ct);
+        if (!result.IsSuccess)
+            return result.Error!;
+        var paciente = result.Value!;
+        if (!string.IsNullOrWhiteSpace(req.Cpf))
+            paciente.Cpf = req.Cpf;
+        if (!string.IsNullOrWhiteSpace(req.DataNascimento)) {
+            if (!DateOnly.TryParseExact(req.DataNascimento, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly dataConvertida))
+            {
+                return Errors.ValidationFailed("A data deve estar no formato YYYY-MM-DD.");
+            }
+            paciente.DataNascimento = dataConvertida;
+        }
+        if (!string.IsNullOrWhiteSpace(req.EnderecoCompleto))
+            paciente.EnderecoCompleto = req.EnderecoCompleto;
+        if (!string.IsNullOrWhiteSpace(req.Nome))
+            paciente.Nome = req.Nome;
+        if (!string.IsNullOrWhiteSpace(req.Rg))
+            paciente.Rg = req.Rg;
+        if (!string.IsNullOrWhiteSpace(req.Telefone))
+            paciente.Telefone = req.Telefone;
+
+        await unitOfWork.CommitAsync();
+        return paciente;
+    }
+    public async Task<Result<Paciente>> AtualizarPacientePorProfissionalAsync(int pacienteId, int profissionalId, AtualizarPacienteRequest req, CancellationToken ct = default)
+    {
+        var result = await repo.FindByIdAndProfissionalTrackingAsync(pacienteId, profissionalId, ct);
+        if (!result.IsSuccess)
+            return result.Error!;
+        var paciente = result.Value!;
+        if (!string.IsNullOrWhiteSpace(req.Cpf))
+            paciente.Cpf = req.Cpf;
+        if (!string.IsNullOrWhiteSpace(req.DataNascimento)) {
+            if (!DateOnly.TryParseExact(req.DataNascimento, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly dataConvertida))
+            {
+                return Errors.ValidationFailed("A data deve estar no formato YYYY-MM-DD.");
+            }
+            paciente.DataNascimento = dataConvertida;
+        }
+        if (!string.IsNullOrWhiteSpace(req.EnderecoCompleto))
+            paciente.EnderecoCompleto = req.EnderecoCompleto;
+        if (!string.IsNullOrWhiteSpace(req.Nome))
+            paciente.Nome = req.Nome;
+        if (!string.IsNullOrWhiteSpace(req.Rg))
+            paciente.Rg = req.Rg;
+        if (!string.IsNullOrWhiteSpace(req.Telefone))
+            paciente.Telefone = req.Telefone;
+
+        await unitOfWork.CommitAsync();
+        return paciente;
     }
 }

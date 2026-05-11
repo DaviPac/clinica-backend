@@ -44,6 +44,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         [FromQuery] string? filtro,
         [FromQuery] string? de,
         [FromQuery] string? ate,
+        [FromQuery(Name = "paciente_id")] string? pacienteIdQuery,
         [FromQuery(Name = "profissional_id")] string? profissionalIdQuery,
         CancellationToken ct)
     {
@@ -57,6 +58,9 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
 
         if (!isAdmin || !mostrarTodos)
             filtroAg.ProfissionalId = profissionalId;
+
+        if (!string.IsNullOrWhiteSpace(pacienteIdQuery) && int.TryParse(pacienteIdQuery, out int pacienteId))
+            filtroAg.PacienteId = pacienteId;
 
         switch (filtro)
         {

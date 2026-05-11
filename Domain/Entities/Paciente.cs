@@ -9,5 +9,7 @@ public class Paciente
     public DateOnly? DataNascimento { get; set; }
     public DateTime CriadoEm { get; set; }
     public bool Ativo { get; set; } = true;
+    public string? EnderecoCompleto { get; set; }
+    public string? Rg { get; set; }
     public ICollection<PacienteProfissional> ProfissionaisVinculados { get; set; } = [];
 }

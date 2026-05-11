@@ -60,6 +60,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(p => p.Cpf)
              .IsUnique();
 
+            e.Property(p => p.Rg)
+             .HasColumnName("rg")
+             .HasMaxLength(20);
+
+            e.Property(p => p.EnderecoCompleto)
+             .HasColumnName("endereco_completo")
+             .HasMaxLength(255);
+
             e.Property(p => p.Telefone)
              .HasColumnName("telefone")
              .HasMaxLength(20);

@@ -5,6 +5,7 @@ namespace Clinica.Domain.Filters;
 public class FiltroAgendamento
 {
     public int? ProfissionalId { get; set; }
+    public int? PacienteId { get; set; }
     public StatusAgendamento? Status { get; set; }
     public bool ApenasAtrasados { get; set; }
     public bool PagamentoPendente { get; set; }

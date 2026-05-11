@@ -14,4 +14,6 @@ public interface IPacienteService
     Task<Result> DesativarAsync(int id, CancellationToken ct = default);
     Task<Result> AtivarAsync(int id, CancellationToken ct = default);
     Task<Result> RemoverVinculoAsync(int pacienteId, int profissionalId, CancellationToken ct = default);
+    Task<Result<Paciente>> AtualizarPacienteAsync(int pacienteId, AtualizarPacienteRequest req, CancellationToken ct = default);
+    Task<Result<Paciente>> AtualizarPacientePorProfissionalAsync(int pacienteId, int profissionalId, AtualizarPacienteRequest req, CancellationToken ct = default);
 }

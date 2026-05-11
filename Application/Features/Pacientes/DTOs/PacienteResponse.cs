@@ -7,9 +7,9 @@ public record PacienteResponse(
     string Nome,
     string? Cpf,
     string? Telefone,
-    [property: JsonPropertyName("data_nascimento")]
     DateOnly? DataNascimento,
     bool Ativo,
-    [property: JsonPropertyName("criado_em")]
-    DateTime CriadoEm
+    DateTime CriadoEm,
+    string? EnderecoCompleto,
+    string? Rg
 );
