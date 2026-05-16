@@ -5,6 +5,7 @@ using Clinica.Application.Interfaces;
 using Clinica.Application.Features.AcertosComissao.DTOs;
 using Clinica.Domain.Entities;
 using Clinica.Domain.Filters;
+using Clinica.Domain.Enums;
 using Clinica.Api.Extensions;
 
 namespace Clinica.Api.Controllers;
@@ -29,6 +30,9 @@ public partial class AcertoComissaoController(IAcertoComissaoService acertoComis
         [FromQuery(Name = "periodo")] string? periodo,
         CancellationToken ct)
     {
+        var role = HttpContext.GetRole();
+        if (role != Role.ADMIN)
+            profissionalId = HttpContext.GetUserId();
         if (periodo is not null && !PeriodoValido(periodo))
             return BadRequest(new { error = "periodo_de deve estar no formato YYYY-MM" });
         var filtro = new FiltroAcertoComissao
