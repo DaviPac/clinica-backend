@@ -66,11 +66,13 @@ public class PacienteRepository(AppDbContext db) : IPacienteRepository
             return await db.Pacientes
                 .AsNoTracking()
                 .Where(p => p.ProfissionaisVinculados.Any(pp => pp.ProfissionalId == profissionalId))
+                .OrderBy(p => p.Nome.ToLower())
                 .ToListAsync(ct);
                 
         return await db.Pacientes
             .AsNoTracking()
             .Where(p => p.Ativo && p.ProfissionaisVinculados.Any(pp => pp.ProfissionalId == profissionalId))
+            .OrderBy(p => p.Nome.ToLower())
             .ToListAsync(ct);
     }
     public async Task<IEnumerable<Paciente>> ListAllAsync(bool showInativos, CancellationToken ct = default)
@@ -78,10 +80,12 @@ public class PacienteRepository(AppDbContext db) : IPacienteRepository
         if (showInativos)
             return await db.Pacientes
                 .AsNoTracking()
+                .OrderBy(p => p.Nome.ToLower())
                 .ToListAsync(ct);
         return await db.Pacientes
             .AsNoTracking()
             .Where(p => p.Ativo)
+            .OrderBy(p => p.Nome.ToLower())
             .ToListAsync(ct);
     }
     public async Task<Result<Paciente>> FindByIdIncludingProfissionaisAsync(int id, CancellationToken ct = default)
