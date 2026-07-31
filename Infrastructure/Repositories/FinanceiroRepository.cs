@@ -15,22 +15,26 @@ public class FinanceiroRepository(AppDbContext db) : IFinanceiroRepository
         var inicio = new DateTimeOffset(ano, mes, 1, 0, 0, 0, TimeSpan.Zero);
         var fim = inicio.AddMonths(1);
 
-        var bruto = await db.Agendamentos
+        var saldoAgendamentos = await db.Agendamentos
             .Where(a =>
                 a.ProfissionalId == profissionalId &&
                 a.DataHoraInicio >= inicio &&
                 a.DataHoraInicio < fim &&
                 a.PagoPeloPaciente &&
                 a.Status != StatusAgendamento.CANCELADO
-            ).SumAsync(a => a.ValorCombinado * (1 - a.PercentualComissaoMomento / 100m), ct);
+            ).SumAsync(a => a.ProfissionalRecebe
+                ? -(a.ValorCombinado * a.PercentualComissaoMomento / 100m)
+                : a.ValorCombinado * (1 - a.PercentualComissaoMomento / 100m), ct);
         
-        var repassado = await db.AcertosComissao
+        var saldoAcertos = await db.AcertosComissao
             .Where(a =>
                 a.ProfissionalId == profissionalId &&
                 a.PeriodoReferencia == periodo
-            ).SumAsync(a => a.ValorPago, ct);
+            ).SumAsync(a => a.ProfissionalRecebe ?
+                -a.ValorPago :
+                a.ValorPago, ct);
         
-        return bruto - repassado;
+        return saldoAgendamentos + saldoAcertos;
     }
     public async Task<RelatorioFinanceiro> GetRelatorioFinanceiroAsync(string periodo, CancellationToken ct = default)
     {
@@ -53,9 +57,14 @@ public class FinanceiroRepository(AppDbContext db) : IFinanceiroRepository
             {
                 ProfissionalId = g.Key.ProfissionalId,
                 NomeProfissional = g.Key.Nome,
-                TotalRecebido = g.Sum(a => a.ValorCombinado),
+                TotalFaturado = g.Sum(a => a.ValorCombinado),
                 ComissaoClinica = g.Sum(a => a.ValorCombinado * a.PercentualComissaoMomento / 100m),
-                AReceber = g.Sum(a => a.ValorCombinado * (1 - a.PercentualComissaoMomento / 100m))
+                DevidoAoProfissional = g.Sum(a => a.ProfissionalRecebe
+                    ? 0m
+                    : a.ValorCombinado * (1 - a.PercentualComissaoMomento / 100m)),
+                DevidoAClinica = g.Sum(a => a.ProfissionalRecebe
+                    ? a.ValorCombinado * a.PercentualComissaoMomento / 100m
+                    : 0m),
             })
             .OrderBy(x => x.NomeProfissional)
             .ToListAsync(ct);
@@ -64,21 +73,31 @@ public class FinanceiroRepository(AppDbContext db) : IFinanceiroRepository
             .AsNoTracking()
             .Where(a => a.PeriodoReferencia == periodo)
             .GroupBy(a => a.ProfissionalId)
-            .Select(g => new { ProfissionalId = g.Key, Total = g.Sum(a => a.ValorPago) })
-            .ToDictionaryAsync(x => x.ProfissionalId, x => x.Total, ct);
+            .Select(g => new
+            {
+                ProfissionalId = g.Key,
+                AoProfissional = g.Sum(a => a.ProfissionalRecebe ? a.ValorPago : 0m),
+                AClinica = g.Sum(a => a.ProfissionalRecebe ? 0m : a.ValorPago)
+            })
+            .ToDictionaryAsync(x => x.ProfissionalId, x => x, ct);
 
         var profissionais = profissionaisData
             .Select(p =>
             {
-                var repassado = acertosMap.GetValueOrDefault(p.ProfissionalId, 0m);
+                var acertos = acertosMap.GetValueOrDefault(p.ProfissionalId);
+                var repassadoAoProfissional = acertos?.AoProfissional ?? 0m;
+                var repassadoAClinica = acertos?.AClinica ?? 0m;
                 return new ResumoComissaoProfissional(
                     p.ProfissionalId,
                     p.NomeProfissional,
-                    p.TotalRecebido,
+                    p.TotalFaturado,
                     p.ComissaoClinica,
-                    p.AReceber,
-                    repassado,
-                    p.AReceber - repassado
+                    p.DevidoAoProfissional,
+                    p.DevidoAClinica,
+                    repassadoAoProfissional,
+                    repassadoAClinica,
+                    p.DevidoAoProfissional - repassadoAoProfissional,
+                    p.DevidoAClinica - repassadoAClinica
                 );
             })
             .ToList();

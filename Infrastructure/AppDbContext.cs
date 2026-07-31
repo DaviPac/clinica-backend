@@ -15,6 +15,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        ModelUsuarios(modelBuilder);
+        ModelPacientes(modelBuilder);
+        ModelPacienteProfissional(modelBuilder);
+        ModelServicos(modelBuilder);
+        ModelAgendamentos(modelBuilder);
+        ModelDespesasClinica(modelBuilder);
+        ModelAcertosComissao(modelBuilder);
+    }
+    private static void ModelUsuarios(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Usuario>(e =>
         {
             e.ToTable("usuarios");
@@ -37,8 +47,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .HasDefaultValueSql("now()")
              .ValueGeneratedOnAdd();
 
+            e.Property(u => u.ProfissionalRecebe)
+             .HasColumnName("profissional_recebe")
+             .HasDefaultValue(false);
+
             e.HasIndex(u => u.Email).IsUnique();
         });
+    }
+    private static void ModelPacientes(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Paciente>(e =>
         {
             e.ToTable("pacientes");
@@ -84,6 +101,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .HasDefaultValueSql("now()")
              .ValueGeneratedOnAdd();
         });
+    }
+    private static void ModelPacienteProfissional(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<PacienteProfissional>(e =>
         {
             e.ToTable("paciente_profissional");
@@ -111,6 +131,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .HasForeignKey(pp => pp.ProfissionalId)
              .OnDelete(DeleteBehavior.Cascade);
         });
+    
+    }
+    private static void ModelServicos(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Servico>(e =>
         {
             e.ToTable("servicos");
@@ -146,6 +170,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .HasForeignKey(s => s.ProfissionalId)
              .OnDelete(DeleteBehavior.Cascade);
         });
+    }
+    private static void ModelAgendamentos(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Agendamento>(e =>
         {
             e.ToTable("agendamentos");
@@ -203,6 +230,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .HasDefaultValueSql("now()")
              .ValueGeneratedOnAdd();
 
+            e.Property(a => a.ProfissionalRecebe)
+             .HasColumnName("profissional_recebe")
+             .HasDefaultValue(false);
+
             e.HasOne(a => a.Paciente)
              .WithMany()
              .HasForeignKey(a => a.PacienteId)
@@ -218,6 +249,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .HasForeignKey(a => a.ServicoId)
              .OnDelete(DeleteBehavior.Restrict);
         });
+    }
+    private static void ModelDespesasClinica(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<DespesaClinica>(e =>
         {
             e.ToTable("despesas_clinica");
@@ -256,6 +290,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .HasDefaultValueSql("now()")
              .ValueGeneratedOnAdd();
         });
+    }
+    private static void ModelAcertosComissao(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<AcertoComissao>(e =>
         {
             e.ToTable("acertos_comissao");
@@ -285,6 +322,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             e.Property(a => a.Observacao)
              .HasColumnName("observacao");
+
+            e.Property(a => a.ProfissionalRecebe)
+             .HasColumnName("profissional_recebe")
+             .HasDefaultValue(false);
 
             e.HasOne(a => a.Profissional)
              .WithMany()

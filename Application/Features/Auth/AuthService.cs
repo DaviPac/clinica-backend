@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Clinica.Application.Common;
 using Clinica.Application.Features.Auth.DTOs;
+using Clinica.Application.Features.Usuarios.DTOs;
 using Clinica.Application.Interfaces;
 using Clinica.Domain.Entities;
 using Clinica.Domain.Enums;
@@ -43,6 +44,7 @@ public class AuthService(IUsuarioRepository repo, IConfiguration config) : IAuth
             Role               = role,
             Profissao          = req.Profissao,
             TaxaComissaoPadrao = req.TaxaComissaoPadrao ?? taxaDefault,
+            ProfissionalRecebe   = req.ProfissionalRecebe ?? false
         };
 
         await repo.CreateAsync(usuario, senhaHash, ct);
@@ -67,18 +69,9 @@ public class AuthService(IUsuarioRepository repo, IConfiguration config) : IAuth
             u.Role.ToString(),
             u.Profissao,
             u.TaxaComissaoPadrao,
-            u.CriadoEm
+            u.CriadoEm,
+            u.ProfissionalRecebe
         ));
-    }
-
-    public async Task<IEnumerable<Usuario>> ListarUsuariosAsync(CancellationToken ct)
-    {
-        return await repo.ListAllAsync(ct);
-    }
-
-    public async Task<Result<Usuario>> ObterUsuarioPorIdAsync(int id, CancellationToken ct)
-    {
-        return await repo.FindByIdAsync(id, ct);
     }
 
     public async Task<Result> MudarSenhaAsync(int id, string senhaAntiga, string novaSenha, CancellationToken ct = default)

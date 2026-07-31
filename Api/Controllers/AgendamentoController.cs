@@ -203,7 +203,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         => new(a.Id, a.PacienteId, a.ProfissionalId, a.ServicoId,
             a.DataHoraInicio.ToOffset(FusoBrasilia), a.DataHoraFim.ToOffset(FusoBrasilia), a.ValorCombinado, a.ValorPacote,
             a.PercentualComissaoMomento, a.Status.ToString(), a.PagoPeloPaciente,
-            a.RecorrenciaGroupId, a.CriadoEm);
+            a.RecorrenciaGroupId, a.CriadoEm, a.ProfissionalRecebe);
 
     private static CriarAgendamentosResponse AgendamentosToCriarAgendamentosResponse(IEnumerable<Agendamento> ags)
         => new(ags.First().RecorrenciaGroupId!, ags.Count(), ags.Select(AgendamentoToResponse));

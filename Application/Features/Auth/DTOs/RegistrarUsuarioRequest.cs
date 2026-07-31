@@ -8,5 +8,6 @@ public record RegistrarUsuarioRequest(
     string  Senha,
     Role?    Role,
     string? Profissao,
-    decimal? TaxaComissaoPadrao
+    decimal? TaxaComissaoPadrao,
+    bool? ProfissionalRecebe
 );

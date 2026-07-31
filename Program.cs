@@ -14,6 +14,7 @@ using Clinica.Infrastructure.Repositories;
 using Clinica.Application.Features.AcertosComissao;
 using Clinica.Application.Features.Financeiro;
 using Clinica.Domain.Enums;
+using Clinica.Application.Features.Usuarios;
 
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
@@ -48,6 +49,7 @@ builder.Services.AddScoped<IAcertoComissaoRepository, AcertoComissaoRepository>(
 builder.Services.AddScoped<IAcertoComissaoService, AcertoComissaoService>();
 builder.Services.AddScoped<IFinanceiroRepository, FinanceiroRepository>();
 builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 
 // --- Autenticação JWT ---
 var jwtKey = builder.Configuration["Jwt:Key"]

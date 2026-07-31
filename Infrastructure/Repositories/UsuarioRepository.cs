@@ -37,6 +37,16 @@ public class UsuarioRepository(AppDbContext db) : IUsuarioRepository
         return usuario;
     }
 
+    public async Task<Result<Usuario>> FindByIdTrackingAsync(int id, CancellationToken ct = default)
+    {
+        var usuario = await db.Usuarios
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
+
+        if (usuario is null) return Errors.AccountNotFound;
+
+        return usuario;
+    }
+
     public async Task<IEnumerable<Usuario>> ListAllAsync(CancellationToken ct = default)
     {
         var usuarios = await db.Usuarios

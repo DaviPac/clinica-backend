@@ -27,6 +27,8 @@ public class AgendamentoService(IAgendamentoRepository agendamentoRepository, IU
 
         var taxa = profissionalResult.Value!.TaxaComissaoPadrao;
 
+        var profissionalRecebe = req.ProfissionalRecebe ?? profissionalResult.Value.ProfissionalRecebe;
+
         var lote = new List<Agendamento>(req.TotalSessoes);
 
         if (!req.Recorrente)
@@ -40,7 +42,8 @@ public class AgendamentoService(IAgendamentoRepository agendamentoRepository, IU
                 DataHoraFim = fim,
                 ValorCombinado = req.ValorCombinado,
                 PercentualComissaoMomento = taxa,
-                Status = StatusAgendamento.AGENDADO
+                Status = StatusAgendamento.AGENDADO,
+                ProfissionalRecebe = profissionalRecebe
             };
             await agendamentoRepository.CreateAsync(a, ct);
             lote.Add(a);
@@ -90,7 +93,8 @@ public class AgendamentoService(IAgendamentoRepository agendamentoRepository, IU
                 ValorPacote = valorPacote,
                 PercentualComissaoMomento = taxa,
                 Status = StatusAgendamento.AGENDADO,
-                RecorrenciaGroupId = groupId
+                RecorrenciaGroupId = groupId,
+                ProfissionalRecebe = profissionalRecebe
             });
         }
         await agendamentoRepository.CreateManyAsync(lote, ct);

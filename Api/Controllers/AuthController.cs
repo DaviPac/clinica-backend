@@ -4,12 +4,13 @@ using Clinica.Application.Interfaces;
 using Clinica.Application.Features.Auth.DTOs;
 using Clinica.Domain.Entities;
 using Clinica.Api.Extensions;
+using Clinica.Application.Features.Usuarios.DTOs;
 
 namespace Clinica.Api.Controllers;
 
 [ApiController]
 [Route("auth")]
-public class AuthController(IAuthService authService) : ControllerBase
+public class AuthController(IAuthService authService, IUsuarioService usuarioService) : ControllerBase
 {
     [HttpPost("registrar")]
     [Authorize(policy: "AdminOnly")]
@@ -34,14 +35,6 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(result.Value);
     }
 
-    [HttpGet("usuarios")]
-    [Authorize(policy: "AdminOnly")]
-    public async Task<IActionResult> ListarUsuarios(CancellationToken ct)
-    {
-        var usuarios = await authService.ListarUsuariosAsync(ct);
-        return Ok(usuarios.Select(UsuarioToResponse));
-    }
-
     [HttpPost("me/senha")]
     [Authorize]
     public async Task<IActionResult> MudarSenha([FromBody] MudarSenhaRequest req, CancellationToken ct)
@@ -59,7 +52,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     {
         var id = HttpContext.GetUserId(); 
 
-        var result = await authService.ObterUsuarioPorIdAsync(id, ct);
+        var result = await usuarioService.ObterUsuarioPorIdAsync(id, ct);
         
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
@@ -73,6 +66,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         u.Role.ToString(),
         u.Profissao,
         u.TaxaComissaoPadrao,
-        u.CriadoEm
+        u.CriadoEm,
+        u.ProfissionalRecebe
     );
 }

@@ -20,4 +20,5 @@ public class Agendamento
     public bool PagoPeloPaciente { get; set; }
     public string? RecorrenciaGroupId { get; set; }
     public DateTime CriadoEm { get; set; }
+    public bool ProfissionalRecebe { get; set; }
 }

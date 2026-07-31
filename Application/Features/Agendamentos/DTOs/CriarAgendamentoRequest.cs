@@ -18,5 +18,6 @@ public record CriarAgendamentoRequest(
     int TotalSessoes,
     [property: JsonPropertyName("intervalo_semanas")]
     int IntervaloSemanas,
-    bool Pacote
+    bool Pacote,
+    bool? ProfissionalRecebe
 );

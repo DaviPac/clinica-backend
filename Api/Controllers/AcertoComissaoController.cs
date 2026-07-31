@@ -54,7 +54,8 @@ public partial class AcertoComissaoController(IAcertoComissaoService acertoComis
             a.PeriodoReferencia,
             a.ValorPago,
             a.DataPagamento,
-            a.Observacao
+            a.Observacao,
+            a.ProfissionalRecebe
         );
 
     [GeneratedRegex(@"^\d{4}-(0[1-9]|1[0-2])$")]

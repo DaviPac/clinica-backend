@@ -11,4 +11,5 @@ public class AcertoComissao
     public decimal ValorPago { get; set; }
     public DateTimeOffset DataPagamento { get; set; }
     public string? Observacao { get; set; }
+    public bool ProfissionalRecebe { get; set; }
 }

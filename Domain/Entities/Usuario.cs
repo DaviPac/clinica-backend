@@ -14,4 +14,5 @@ public class Usuario
     public DateTime CriadoEm { get; set; }
     public ICollection<PacienteProfissional> PacientesAtendidos { get; set; } = [];
     public ICollection<Servico> Servicos { get; set; } = [];
+    public bool ProfissionalRecebe { get; set; }
 }

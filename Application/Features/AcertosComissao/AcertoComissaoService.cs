@@ -23,7 +23,8 @@ public partial class AcertoComissaoService(IAcertoComissaoRepository repo) : IAc
             PeriodoReferencia = req.PeriodoReferencia,
             ValorPago = req.ValorPago,
             DataPagamento = DateTimeOffset.UtcNow,
-            Observacao = req.Observacao
+            Observacao = req.Observacao,
+            ProfissionalRecebe = req.ProfissionalRecebe
         };
         await repo.CreateAsync(acerto, ct);
         return acerto;
