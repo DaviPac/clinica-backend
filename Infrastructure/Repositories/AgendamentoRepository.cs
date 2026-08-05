@@ -183,7 +183,7 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
     public async Task<Result<Agendamento>> UpdatePagamentoForProfissionalAsync(int id, int profissionalId, bool pago, CancellationToken ct = default)
     {
         var agendamento = await db.Agendamentos
-            .FirstOrDefaultAsync(a => a.Id == id && a.ProfissionalId == profissionalId, ct);
+            .FirstOrDefaultAsync(a => a.Id == id && a.ProfissionalId == profissionalId && a.ProfissionalRecebe, ct);
 
         if (agendamento is null)
             return Errors.ScheduleNotFound;
