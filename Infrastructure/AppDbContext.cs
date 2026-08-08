@@ -325,7 +325,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             e.Property(a => a.ProfissionalRecebe)
              .HasColumnName("profissional_recebe")
-             .HasDefaultValue(false);
+             .IsRequired();
 
             e.HasOne(a => a.Profissional)
              .WithMany()
