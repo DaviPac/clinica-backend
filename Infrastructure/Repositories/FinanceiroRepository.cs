@@ -36,6 +36,60 @@ public class FinanceiroRepository(AppDbContext db) : IFinanceiroRepository
         
         return saldoAgendamentos + saldoAcertos;
     }
+    public async Task<RelatorioSessoes?> GetRelatorioSessoesAsync(int profissionalId, DateOnly inicio, DateOnly fim, CancellationToken ct = default)
+    {
+        var profissional = await db.Usuarios
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == profissionalId, ct);
+        if (profissional is null)
+            return null;
+
+        var inicioDt = new DateTimeOffset(inicio.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var fimDt = new DateTimeOffset(fim.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+        var sessoes = await db.Agendamentos
+            .AsNoTracking()
+            .Where(a =>
+                a.ProfissionalId == profissionalId &&
+                a.Status != StatusAgendamento.CANCELADO &&
+                a.DataHoraInicio >= inicioDt &&
+                a.DataHoraInicio < fimDt)
+            .OrderBy(a => a.DataHoraInicio)
+            .Select(a => new SessaoRelatorio(
+                a.Id,
+                a.DataHoraInicio,
+                a.Paciente!.Nome,
+                a.Servico!.Nome,
+                a.Status,
+                a.PagoPeloPaciente,
+                a.ProfissionalRecebe,
+                a.ValorCombinado,
+                a.PercentualComissaoMomento,
+                a.ValorCombinado * a.PercentualComissaoMomento / 100m,
+                a.ValorCombinado * (1 - a.PercentualComissaoMomento / 100m),
+                a.PagoPeloPaciente && !a.ProfissionalRecebe ? a.ValorCombinado : 0m,
+                a.PagoPeloPaciente && a.ProfissionalRecebe ? a.ValorCombinado : 0m,
+                a.PagoPeloPaciente && !a.ProfissionalRecebe
+                    ? a.ValorCombinado * (1 - a.PercentualComissaoMomento / 100m)
+                    : 0m,
+                a.PagoPeloPaciente && a.ProfissionalRecebe
+                    ? a.ValorCombinado * a.PercentualComissaoMomento / 100m
+                    : 0m
+            ))
+            .ToListAsync(ct);
+
+        var totais = new TotaisRelatorioSessoes(
+            sessoes.Count,
+            sessoes.Sum(s => s.ValorSessao),
+            sessoes.Sum(s => s.RecebidoPelaClinica),
+            sessoes.Sum(s => s.RecebidoPeloProfissional),
+            sessoes.Sum(s => s.DevidoAoProfissional),
+            sessoes.Sum(s => s.DevidoAClinica)
+        );
+
+        return new RelatorioSessoes(profissionalId, profissional.Nome, inicio, fim, sessoes, totais);
+    }
+
     public async Task<RelatorioFinanceiro> GetRelatorioFinanceiroAsync(string periodo, CancellationToken ct = default)
     {
         var partes = periodo.Split('-');

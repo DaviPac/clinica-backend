@@ -7,4 +7,5 @@ public interface IFinanceiroService
 {
     Task<Result<decimal>> SaldoComissaoPendenteAsync(int profissionalId, string periodo, CancellationToken ct = default);
     Task<Result<RelatorioFinanceiro>> GetRelatorioFinanceiroAsync(string periodo, CancellationToken ct = default);
+    Task<Result<RelatorioSessoes>> GetRelatorioSessoesAsync(int profissionalId, string inicio, string fim, CancellationToken ct = default);
 }
