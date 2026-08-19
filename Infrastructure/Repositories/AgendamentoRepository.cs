@@ -336,6 +336,9 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
         if (agendamento is null)
             return Errors.ScheduleNotFound;
 
+        if (await CheckConflictExcludingAsync(agendamento.ProfissionalId, [id], [(novoInicio, novoFim)], ct))
+            return Errors.ConflictingSchedule;
+
         agendamento.DataHoraInicio = novoInicio;
         agendamento.DataHoraFim = novoFim;
         await db.SaveChangesAsync(ct);
@@ -347,45 +350,109 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
         if (agendamento is null)
             return Errors.ScheduleNotFound;
 
+        if (await CheckConflictExcludingAsync(profissionalId, [id], [(novoInicio, novoFim)], ct))
+            return Errors.ConflictingSchedule;
+
         agendamento.DataHoraInicio = novoInicio;
         agendamento.DataHoraFim = novoFim;
         await db.SaveChangesAsync(ct);
         return Result.Success();
     }
-    public async Task<Result> RescheduleRecorrenciaAsync(string recorrenciaGroupId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    public async Task<Result> RescheduleRecorrenciaAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, int intervaloSemanas, CancellationToken ct = default)
     {
-        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.RecorrenciaGroupId == recorrenciaGroupId, ct);
+        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.Id == id, ct);
         if (agendamento is null)
             return Errors.ScheduleNotFound;
 
-        var diferenca = novoInicio - agendamento.DataHoraInicio;
-        var diferencaFim = novoFim - agendamento.DataHoraFim;
+        if (agendamento.RecorrenciaGroupId is null)
+            return Errors.ValidationFailed("Agendamento não pertence a uma recorrência.");
 
-        await db.Agendamentos
+        var recorrenciaGroupId = agendamento.RecorrenciaGroupId;
+
+        var movidos = await db.Agendamentos
             .Where(a => a.RecorrenciaGroupId == recorrenciaGroupId && a.Status == StatusAgendamento.AGENDADO && a.DataHoraInicio > DateTimeOffset.UtcNow)
-            .ExecuteUpdateAsync(s =>
-                s.SetProperty(a => a.DataHoraInicio, a => a.DataHoraInicio + diferenca)
-                 .SetProperty(a => a.DataHoraFim, a => a.DataHoraFim + diferencaFim),
-                ct);
+            .OrderBy(a => a.DataHoraInicio)
+            .ToListAsync(ct);
 
+        return await AplicarReagendamentoSerieAsync(agendamento.ProfissionalId, movidos, novoInicio, novoFim, intervaloSemanas, ct);
+    }
+    public async Task<Result> RescheduleRecorrenciaForProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, int intervaloSemanas, CancellationToken ct = default)
+    {
+        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.Id == id && a.ProfissionalId == profissionalId, ct);
+        if (agendamento is null)
+            return Errors.ScheduleNotFound;
+
+        if (agendamento.RecorrenciaGroupId is null)
+            return Errors.ValidationFailed("Agendamento não pertence a uma recorrência.");
+
+        var recorrenciaGroupId = agendamento.RecorrenciaGroupId;
+
+        var movidos = await db.Agendamentos
+            .Where(a => a.RecorrenciaGroupId == recorrenciaGroupId && a.ProfissionalId == profissionalId && a.Status == StatusAgendamento.AGENDADO && a.DataHoraInicio > DateTimeOffset.UtcNow)
+            .OrderBy(a => a.DataHoraInicio)
+            .ToListAsync(ct);
+
+        return await AplicarReagendamentoSerieAsync(profissionalId, movidos, novoInicio, novoFim, intervaloSemanas, ct);
+    }
+    // Redistribui as sessões futuras a partir de novoInicio, como na criação:
+    // a i-ésima sessão (na ordem atual) fica em novoInicio + i * intervaloSemanas semanas
+    private async Task<Result> AplicarReagendamentoSerieAsync(
+        int profissionalId,
+        List<Agendamento> movidos,
+        DateTimeOffset novoInicio,
+        DateTimeOffset novoFim,
+        int intervaloSemanas,
+        CancellationToken ct
+    )
+    {
+        if (movidos.Count == 0)
+            return Errors.ScheduleNotFound;
+
+        var duracao = novoFim - novoInicio;
+        var idsMovidos = movidos.Select(m => m.Id).ToList();
+
+        var novosIntervalos = new List<(DateTimeOffset Inicio, DateTimeOffset Fim)>(movidos.Count);
+        for (int i = 0; i < movidos.Count; i++)
+        {
+            var inicio = novoInicio.AddDays(i * intervaloSemanas * 7);
+            novosIntervalos.Add((inicio, inicio + duracao));
+        }
+
+        if (await CheckConflictExcludingAsync(profissionalId, idsMovidos, novosIntervalos, ct))
+            return Errors.ConflictingSchedule;
+
+        for (int i = 0; i < movidos.Count; i++)
+        {
+            movidos[i].DataHoraInicio = novosIntervalos[i].Inicio;
+            movidos[i].DataHoraFim = novosIntervalos[i].Fim;
+        }
+        await db.SaveChangesAsync(ct);
         return Result.Success();
     }
-    public async Task<Result> RescheduleRecorrenciaForProfissionalAsync(string recorrenciaGroupId, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    // Conflito contra agendamentos que permanecem no lugar: exclui os que estão sendo movidos
+    private async Task<bool> CheckConflictExcludingAsync(
+        int profissionalId,
+        List<int> idsExcluidos,
+        List<(DateTimeOffset Inicio, DateTimeOffset Fim)> intervalos,
+        CancellationToken ct
+    )
     {
-        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.RecorrenciaGroupId == recorrenciaGroupId && a.ProfissionalId == profissionalId, ct);
-        if (agendamento is null)
-            return Errors.ScheduleNotFound;
+        if (intervalos.Count == 0) return false;
+        var minInicio = intervalos.Min(x => x.Inicio);
+        var maxFim = intervalos.Max(x => x.Fim);
 
-        var diferenca = novoInicio - agendamento.DataHoraInicio;
-        var diferencaFim = novoFim - agendamento.DataHoraFim;
+        var candidatos = await db.Agendamentos
+            .Where(a => a.ProfissionalId == profissionalId &&
+                        !idsExcluidos.Contains(a.Id) &&
+                        a.Status != StatusAgendamento.CANCELADO &&
+                        a.DataHoraInicio < maxFim &&
+                        a.DataHoraFim > minInicio)
+            .Select(a => new { a.DataHoraInicio, a.DataHoraFim })
+            .ToListAsync(ct);
 
-        await db.Agendamentos
-            .Where(a => a.RecorrenciaGroupId == recorrenciaGroupId && a.ProfissionalId == profissionalId && a.Status == StatusAgendamento.AGENDADO && a.DataHoraInicio > DateTimeOffset.UtcNow)
-            .ExecuteUpdateAsync(s =>
-                s.SetProperty(a => a.DataHoraInicio, a => a.DataHoraInicio + diferenca)
-                 .SetProperty(a => a.DataHoraFim, a => a.DataHoraFim + diferencaFim),
-                ct);
-
-        return Result.Success();
+        return intervalos.Any(intervalo =>
+            candidatos.Any(c =>
+                c.DataHoraInicio < intervalo.Fim &&
+                c.DataHoraFim > intervalo.Inicio));
     }
 }

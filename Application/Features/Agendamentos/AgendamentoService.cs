@@ -166,18 +166,36 @@ public class AgendamentoService(IAgendamentoRepository agendamentoRepository, IU
     }
     public async Task<Result> ReagendarAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
     {
-        return await agendamentoRepository.RescheduleAsync(id, novoInicio, novoFim, ct);
+        if (novoFim <= novoInicio)
+            return Errors.ValidationFailed("Data/hora final deve ser posterior à inicial.");
+
+        return await agendamentoRepository.RescheduleAsync(id, novoInicio.ToUniversalTime(), novoFim.ToUniversalTime(), ct);
     }
     public async Task<Result> ReagendarParaProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
     {
-        return await agendamentoRepository.RescheduleForProfissionalAsync(id, profissionalId, novoInicio, novoFim, ct);
+        if (novoFim <= novoInicio)
+            return Errors.ValidationFailed("Data/hora final deve ser posterior à inicial.");
+
+        return await agendamentoRepository.RescheduleForProfissionalAsync(id, profissionalId, novoInicio.ToUniversalTime(), novoFim.ToUniversalTime(), ct);
     }
-    public async Task<Result> ReagendarRecorrenciaAsync(string recorrenciaGroupId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    public async Task<Result> ReagendarRecorrenciaAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, int intervaloSemanas, CancellationToken ct = default)
     {
-        return await agendamentoRepository.RescheduleRecorrenciaAsync(recorrenciaGroupId, novoInicio, novoFim, ct);
+        if (novoFim <= novoInicio)
+            return Errors.ValidationFailed("Data/hora final deve ser posterior à inicial.");
+
+        if (intervaloSemanas < 1)
+            return Errors.ValidationFailed("Intervalo semanal não pode ser menor que 1.");
+
+        return await agendamentoRepository.RescheduleRecorrenciaAsync(id, novoInicio.ToUniversalTime(), novoFim.ToUniversalTime(), intervaloSemanas, ct);
     }
-    public async Task<Result> ReagendarRecorrenciaParaProfissionalAsync(string recorrenciaGroupId, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    public async Task<Result> ReagendarRecorrenciaParaProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, int intervaloSemanas, CancellationToken ct = default)
     {
-        return await agendamentoRepository.RescheduleRecorrenciaForProfissionalAsync(recorrenciaGroupId, profissionalId, novoInicio, novoFim, ct);
+        if (novoFim <= novoInicio)
+            return Errors.ValidationFailed("Data/hora final deve ser posterior à inicial.");
+
+        if (intervaloSemanas < 1)
+            return Errors.ValidationFailed("Intervalo semanal não pode ser menor que 1.");
+
+        return await agendamentoRepository.RescheduleRecorrenciaForProfissionalAsync(id, profissionalId, novoInicio.ToUniversalTime(), novoFim.ToUniversalTime(), intervaloSemanas, ct);
     }
 }

@@ -24,6 +24,6 @@ public interface IAgendamentoService
     Task<Result> CancelarRecorrenciaParaProfissionalAsync(string recorrenciaGroupId, int profissionalId, CancellationToken ct = default);
     Task<Result> ReagendarAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default);
     Task<Result> ReagendarParaProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default);
-    Task<Result> ReagendarRecorrenciaAsync(string recorrenciaGroupId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default);
-    Task<Result> ReagendarRecorrenciaParaProfissionalAsync(string recorrenciaGroupId, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default);
+    Task<Result> ReagendarRecorrenciaAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, int intervaloSemanas, CancellationToken ct = default);
+    Task<Result> ReagendarRecorrenciaParaProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, int intervaloSemanas, CancellationToken ct = default);
 }

@@ -168,6 +168,8 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         return NoContent();
     }
 
+    [HttpPatch("{id}/reagendar")]
+    [Authorize]
     public async Task<IActionResult> Reagendar(
         int id,
         [FromBody] ReagendarAgendamentoRequest req,
@@ -178,12 +180,12 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         Result result;
         if (role == Role.ADMIN)
             if (req.ReagendarRecorrencia)
-                result = await agendamentoService.ReagendarRecorrenciaAsync(id.ToString(), req.NovoInicio, req.NovoFim, ct);
+                result = await agendamentoService.ReagendarRecorrenciaAsync(id, req.NovoInicio, req.NovoFim, req.IntervaloSemanas, ct);
             else
                 result = await agendamentoService.ReagendarAsync(id, req.NovoInicio, req.NovoFim, ct);
         else
             if (req.ReagendarRecorrencia)
-                result = await agendamentoService.ReagendarRecorrenciaParaProfissionalAsync(id.ToString(), HttpContext.GetUserId(), req.NovoInicio, req.NovoFim, ct);
+                result = await agendamentoService.ReagendarRecorrenciaParaProfissionalAsync(id, HttpContext.GetUserId(), req.NovoInicio, req.NovoFim, req.IntervaloSemanas, ct);
             else
                 result = await agendamentoService.ReagendarParaProfissionalAsync(id, HttpContext.GetUserId(), req.NovoInicio, req.NovoFim, ct);
 

@@ -5,4 +5,5 @@ public class ReagendarAgendamentoRequest
     public DateTimeOffset NovoInicio { get; set; }
     public DateTimeOffset NovoFim { get; set; }
     public required bool ReagendarRecorrencia { get; set; }
+    public required int IntervaloSemanas { get; set; }
 }
