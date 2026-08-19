@@ -69,7 +69,6 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
 
         return agendamento;
     }
-
     public async Task<IReadOnlyList<Agendamento>> ListAsync(FiltroAgendamento filtro, CancellationToken ct = default)
     {
         var query = db.Agendamentos.AsNoTracking().AsQueryable();
@@ -329,6 +328,64 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
         if (rowsAffected == 0)
             return Errors.ScheduleNotFound;
         
+        return Result.Success();
+    }
+    public async Task<Result> RescheduleAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    {
+        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.Id == id, ct);
+        if (agendamento is null)
+            return Errors.ScheduleNotFound;
+
+        agendamento.DataHoraInicio = novoInicio;
+        agendamento.DataHoraFim = novoFim;
+        await db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+    public async Task<Result> RescheduleForProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    {
+        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.Id == id && a.ProfissionalId == profissionalId, ct);
+        if (agendamento is null)
+            return Errors.ScheduleNotFound;
+
+        agendamento.DataHoraInicio = novoInicio;
+        agendamento.DataHoraFim = novoFim;
+        await db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+    public async Task<Result> RescheduleRecorrenciaAsync(string recorrenciaGroupId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    {
+        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.RecorrenciaGroupId == recorrenciaGroupId, ct);
+        if (agendamento is null)
+            return Errors.ScheduleNotFound;
+
+        var diferenca = novoInicio - agendamento.DataHoraInicio;
+        var diferencaFim = novoFim - agendamento.DataHoraFim;
+
+        await db.Agendamentos
+            .Where(a => a.RecorrenciaGroupId == recorrenciaGroupId && a.Status == StatusAgendamento.AGENDADO && a.DataHoraInicio > DateTimeOffset.UtcNow)
+            .ExecuteUpdateAsync(s =>
+                s.SetProperty(a => a.DataHoraInicio, a => a.DataHoraInicio + diferenca)
+                 .SetProperty(a => a.DataHoraFim, a => a.DataHoraFim + diferencaFim),
+                ct);
+
+        return Result.Success();
+    }
+    public async Task<Result> RescheduleRecorrenciaForProfissionalAsync(string recorrenciaGroupId, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    {
+        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.RecorrenciaGroupId == recorrenciaGroupId && a.ProfissionalId == profissionalId, ct);
+        if (agendamento is null)
+            return Errors.ScheduleNotFound;
+
+        var diferenca = novoInicio - agendamento.DataHoraInicio;
+        var diferencaFim = novoFim - agendamento.DataHoraFim;
+
+        await db.Agendamentos
+            .Where(a => a.RecorrenciaGroupId == recorrenciaGroupId && a.ProfissionalId == profissionalId && a.Status == StatusAgendamento.AGENDADO && a.DataHoraInicio > DateTimeOffset.UtcNow)
+            .ExecuteUpdateAsync(s =>
+                s.SetProperty(a => a.DataHoraInicio, a => a.DataHoraInicio + diferenca)
+                 .SetProperty(a => a.DataHoraFim, a => a.DataHoraFim + diferencaFim),
+                ct);
+
         return Result.Success();
     }
 }

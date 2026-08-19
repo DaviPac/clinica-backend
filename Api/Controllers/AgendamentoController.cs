@@ -168,6 +168,30 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         return NoContent();
     }
 
+    public async Task<IActionResult> Reagendar(
+        int id,
+        [FromBody] ReagendarAgendamentoRequest req,
+        CancellationToken ct
+    )
+    {
+        var role = HttpContext.GetRole();
+        Result result;
+        if (role == Role.ADMIN)
+            if (req.ReagendarRecorrencia)
+                result = await agendamentoService.ReagendarRecorrenciaAsync(id.ToString(), req.NovoInicio, req.NovoFim, ct);
+            else
+                result = await agendamentoService.ReagendarAsync(id, req.NovoInicio, req.NovoFim, ct);
+        else
+            if (req.ReagendarRecorrencia)
+                result = await agendamentoService.ReagendarRecorrenciaParaProfissionalAsync(id.ToString(), HttpContext.GetUserId(), req.NovoInicio, req.NovoFim, ct);
+            else
+                result = await agendamentoService.ReagendarParaProfissionalAsync(id, HttpContext.GetUserId(), req.NovoInicio, req.NovoFim, ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return NoContent();
+    }
+
     private static (DateTimeOffset? De, DateTimeOffset? Ate) ParseFiltrosPeriodo(string? de, string? ate)
     {
         return (ParseDe(de), ParseAte(ate));

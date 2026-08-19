@@ -24,4 +24,8 @@ public interface IAgendamentoRepository
     Task<Result<Agendamento>> UpdateValorCombinadoRecorrenteForProfissionalAsync(int id, int profissionalId, decimal valorCombinado, CancellationToken ct = default);
     Task<Result> CancelRecorrenciaAsync(string recorrenciaGroupId, CancellationToken ct = default);
     Task<Result> CancelRecorrenciaForProfissionalAsync(string recorrenciaGroupId, int profissionalId, CancellationToken ct = default);
+    Task<Result> RescheduleAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default);
+    Task<Result> RescheduleForProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default);
+    Task<Result> RescheduleRecorrenciaAsync(string recorrenciaGroupId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default);
+    Task<Result> RescheduleRecorrenciaForProfissionalAsync(string recorrenciaGroupId, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default);
 }

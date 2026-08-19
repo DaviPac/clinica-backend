@@ -164,4 +164,20 @@ public class AgendamentoService(IAgendamentoRepository agendamentoRepository, IU
     {
         return await agendamentoRepository.CancelRecorrenciaForProfissionalAsync(recorrenciaGroupId, profissionalId, ct);
     }
+    public async Task<Result> ReagendarAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    {
+        return await agendamentoRepository.RescheduleAsync(id, novoInicio, novoFim, ct);
+    }
+    public async Task<Result> ReagendarParaProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    {
+        return await agendamentoRepository.RescheduleForProfissionalAsync(id, profissionalId, novoInicio, novoFim, ct);
+    }
+    public async Task<Result> ReagendarRecorrenciaAsync(string recorrenciaGroupId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    {
+        return await agendamentoRepository.RescheduleRecorrenciaAsync(recorrenciaGroupId, novoInicio, novoFim, ct);
+    }
+    public async Task<Result> ReagendarRecorrenciaParaProfissionalAsync(string recorrenciaGroupId, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
+    {
+        return await agendamentoRepository.RescheduleRecorrenciaForProfissionalAsync(recorrenciaGroupId, profissionalId, novoInicio, novoFim, ct);
+    }
 }
