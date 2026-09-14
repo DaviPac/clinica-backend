@@ -15,8 +15,11 @@ using Clinica.Application.Features.AcertosComissao;
 using Clinica.Application.Features.Financeiro;
 using Clinica.Domain.Enums;
 using Clinica.Application.Features.Usuarios;
+using Clinica.Infrastructure.Pdf;
+using QuestPDF.Infrastructure;
 
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
@@ -50,6 +53,7 @@ builder.Services.AddScoped<IAcertoComissaoService, AcertoComissaoService>();
 builder.Services.AddScoped<IFinanceiroRepository, FinanceiroRepository>();
 builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddSingleton<IRelatorioSessoesPdfGenerator, RelatorioSessoesPdfGenerator>();
 
 // --- Autenticação JWT ---
 var jwtKey = builder.Configuration["Jwt:Key"]
