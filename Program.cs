@@ -15,6 +15,7 @@ using Clinica.Application.Features.AcertosComissao;
 using Clinica.Application.Features.Financeiro;
 using Clinica.Domain.Enums;
 using Clinica.Application.Features.Usuarios;
+using Clinica.Application.Features.Gemini;
 using Clinica.Infrastructure.Pdf;
 using QuestPDF.Infrastructure;
 
@@ -54,6 +55,9 @@ builder.Services.AddScoped<IFinanceiroRepository, FinanceiroRepository>();
 builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddSingleton<IRelatorioSessoesPdfGenerator, RelatorioSessoesPdfGenerator>();
+
+// Chave do assistente de IA. Em produção vem da variável de ambiente Gemini__ApiKey.
+builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection(GeminiOptions.Secao));
 
 // --- Autenticação JWT ---
 var jwtKey = builder.Configuration["Jwt:Key"]
