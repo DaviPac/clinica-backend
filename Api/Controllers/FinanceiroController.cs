@@ -10,7 +10,10 @@ namespace Clinica.Api.Controllers;
 
 [ApiController]
 [Route("financeiro")]
-public class FinanceiroController(IFinanceiroService financeiroService) : ControllerBase
+public class FinanceiroController(
+    IFinanceiroService financeiroService,
+    IRelatorioSessoesPdfGenerator relatorioSessoesPdfGenerator
+) : ControllerBase
 {
     [HttpGet("saldo-a-receber")]
     [Authorize]
@@ -50,6 +53,30 @@ public class FinanceiroController(IFinanceiroService financeiroService) : Contro
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
         return Ok(result.Value);
+    }
+
+    [HttpGet("relatorio-sessoes/pdf")]
+    [Authorize]
+    public async Task<IActionResult> ObterRelatorioSessoesPdf(
+        [FromQuery] string inicio,
+        [FromQuery] string fim,
+        [FromQuery(Name = "profissional_id")] string? profissionalIdQuery,
+        CancellationToken ct
+    )
+    {
+        var profissionalId = HttpContext.GetUserId();
+        var role = HttpContext.GetRole();
+        if (role == Role.ADMIN && profissionalIdQuery != null)
+            if (!int.TryParse(profissionalIdQuery, out profissionalId))
+                return this.HandleError(Errors.ValidationFailed("ID do profissional inválido."));
+
+        var result = await financeiroService.GetRelatorioSessoesAsync(profissionalId, inicio, fim, ct);
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+
+        var pdf = relatorioSessoesPdfGenerator.Gerar(result.Value!);
+        var nomeArquivo = $"relatorio-sessoes-{inicio}-a-{fim}.pdf";
+        return File(pdf, "application/pdf", nomeArquivo);
     }
 
     [HttpGet("relatorio")]
