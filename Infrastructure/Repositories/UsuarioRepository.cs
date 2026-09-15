@@ -104,7 +104,7 @@ public class UsuarioRepository(AppDbContext db) : IUsuarioRepository
         return CheckAffectedRows(affected);
     }
 
-    public async Task<Result> SetAtivo(int id, bool ativo, CancellationToken ct = default)
+    public async Task<Result> SetAtivoAsync(int id, bool ativo, CancellationToken ct = default)
     {
         var affected = await db.Usuarios
             .Where(u => u.Id == id)
