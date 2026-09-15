@@ -43,6 +43,18 @@ public class UsuarioController(IUsuarioService usuarioService) : ControllerBase
         return Ok(UsuarioToResponse(result.Value!));
     }
 
+    [HttpDelete("{id}")]
+    [Authorize(policy: "AdminOnly")]
+    public async Task<IActionResult> AtualizarUsuario(int id)
+    {
+        var result = await usuarioService.DefinirAtivacaoUsuarioPorIdAsync(id, false);
+        if (!result.IsSuccess)
+        {
+            return this.HandleError(result.Error!);
+        }
+        return NoContent();
+    }
+
     private static UsuarioResponse UsuarioToResponse(Usuario u) => new(
         u.Id,
         u.Nome,

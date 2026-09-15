@@ -54,4 +54,9 @@ public class UsuarioService(IUsuarioRepository repo, IUnitOfWork unitOfWork) : I
         await unitOfWork.CommitAsync();
         return usuario;
     }
+
+    public async Task<Result> DefinirAtivacaoUsuarioPorIdAsync(int id, bool ativo)
+    {
+        return repo.SetAtivoAsync(id, ativo);
+    }
 }

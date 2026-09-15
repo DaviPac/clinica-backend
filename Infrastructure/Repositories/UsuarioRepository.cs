@@ -19,7 +19,7 @@ public class UsuarioRepository(AppDbContext db) : IUsuarioRepository
     {
         var usuario = await db.Usuarios
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email, ct);
+            .FirstOrDefaultAsync(u => u.Ativo && u.Email == email, ct);
 
         if (usuario is null) return Errors.AccountNotFound;
 
@@ -51,6 +51,7 @@ public class UsuarioRepository(AppDbContext db) : IUsuarioRepository
     {
         var usuarios = await db.Usuarios
             .AsNoTracking()
+            .Where(u => u.Ativo)
             .OrderBy(u => u.Nome)
             .ToListAsync(ct);
 
@@ -98,6 +99,17 @@ public class UsuarioRepository(AppDbContext db) : IUsuarioRepository
             .Where(u => u.Id == id)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(u => u.Email, novoEmail),
+            ct);
+
+        return CheckAffectedRows(affected);
+    }
+
+    public async Task<Result> SetAtivo(int id, bool ativo)
+    {
+        var affected = await db.Usuarios
+            .Where(u => u.Id == id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(u => u.Ativo, ativo),
             ct);
 
         return CheckAffectedRows(affected);

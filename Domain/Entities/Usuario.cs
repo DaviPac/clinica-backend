@@ -15,4 +15,5 @@ public class Usuario
     public ICollection<PacienteProfissional> PacientesAtendidos { get; set; } = [];
     public ICollection<Servico> Servicos { get; set; } = [];
     public bool ProfissionalRecebe { get; set; }
+    public bool Ativo { get; set; }
 }

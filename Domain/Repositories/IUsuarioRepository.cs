@@ -15,4 +15,5 @@ public interface IUsuarioRepository
     Task<Result> UpdatePasswordAsync(int id, string novaSenhaHash, CancellationToken ct = default);
     Task<Result> UpdateSystemRolesAsync(int id, Role role, decimal taxaComissao, CancellationToken ct = default);
     Task<Result> UpdateEmailAsync(int id, string novoEmail, CancellationToken ct = default);
+    Task<Result> SetAtivoAsync(int id, bool ativo, CancellationToken ct = default);
 }
