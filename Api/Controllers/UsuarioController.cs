@@ -45,7 +45,7 @@ public class UsuarioController(IUsuarioService usuarioService) : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize(policy: "AdminOnly")]
-    public async Task<IActionResult> AtualizarUsuario(int id)
+    public async Task<IActionResult> InativarUsuario(int id)
     {
         var result = await usuarioService.DefinirAtivacaoUsuarioPorIdAsync(id, false);
         if (!result.IsSuccess)
