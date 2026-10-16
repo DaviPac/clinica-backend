@@ -9,4 +9,5 @@ public interface IUsuarioService
     Task<IEnumerable<Usuario>> ListarUsuariosAsync(CancellationToken ct);
     Task<Result<Usuario>> ObterUsuarioPorIdAsync(int id, CancellationToken ct);
     Task<Result<Usuario>> AtualizarUsuarioPorIdAsync(int id, AtualizarUsuarioRequest request, CancellationToken ct);
+    Task<Result> DefinirAtivacaoUsuarioPorIdAsync(int id, bool ativo);
 }

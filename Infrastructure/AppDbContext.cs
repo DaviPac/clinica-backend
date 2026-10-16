@@ -51,6 +51,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .HasColumnName("profissional_recebe")
              .HasDefaultValue(false);
 
+            e.Property(u => u.Ativo)
+             .HasColumnName("ativo")
+             .HasDefaultValue(true);
+
             e.HasIndex(u => u.Email).IsUnique();
         });
     }
