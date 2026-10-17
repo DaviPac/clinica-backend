@@ -21,7 +21,7 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
     }
     public async Task<bool> CheckConflictAsync(int profissionalId, DateTimeOffset inicio, DateTimeOffset fim, CancellationToken ct = default)
     {
-        return await db.Agendamentos.AnyAsync(a => 
+        return await db.Agendamentos.AnyAsync(a =>
             a.ProfissionalId == profissionalId &&
             a.Status != StatusAgendamento.CANCELADO &&
             a.DataHoraInicio < fim &&
@@ -30,8 +30,8 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
         );
     }
     public async Task<bool> CheckAnyConflictAsync(
-        int profissionalId, 
-        IEnumerable<(DateTimeOffset Inicio, DateTimeOffset Fim)> intervalos, 
+        int profissionalId,
+        IEnumerable<(DateTimeOffset Inicio, DateTimeOffset Fim)> intervalos,
         CancellationToken ct = default
     )
     {
@@ -49,8 +49,8 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
             .ToListAsync(ct);
 
         return lista.Any(intervalo =>
-            candidatos.Any(c => 
-                c.DataHoraInicio < intervalo.Fim && 
+            candidatos.Any(c =>
+                c.DataHoraInicio < intervalo.Fim &&
                 c.DataHoraFim > intervalo.Inicio));
     }
     public async Task<Result<Agendamento>> FindByIdAsync(int id, CancellationToken ct = default)
@@ -242,7 +242,7 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
         var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.Id == id, ct);
         if (agendamento is null)
             return Errors.ScheduleNotFound;
-        
+
         agendamento.ValorCombinado = valorCombinado;
         await db.SaveChangesAsync(ct);
         return agendamento;
@@ -252,7 +252,7 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
         var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.Id == id && a.ProfissionalId == profissionalId, ct);
         if (agendamento is null)
             return Errors.ScheduleNotFound;
-        
+
         agendamento.ValorCombinado = valorCombinado;
         await db.SaveChangesAsync(ct);
         return agendamento;
@@ -309,7 +309,7 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
 
         if (rowsAffected == 0)
             return Errors.ScheduleNotFound;
-        
+
         return Result.Success();
     }
     public async Task<Result> CancelRecorrenciaForProfissionalAsync(string recorrenciaGroupId, int profissionalId, CancellationToken ct = default)
@@ -327,7 +327,7 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
 
         if (rowsAffected == 0)
             return Errors.ScheduleNotFound;
-        
+
         return Result.Success();
     }
     public async Task<Result> RescheduleAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default)
@@ -394,6 +394,18 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
 
         return await AplicarReagendamentoSerieAsync(profissionalId, movidos, novoInicio, novoFim, intervaloSemanas, ct);
     }
+
+    public async Task UpdateCommissionAsync(int profissionalId, decimal taxaComissao, CancellationToken ct = default)
+    {
+        await db.Agendamentos
+            .Where(a => a.ProfissionalId == profissionalId &&
+                a.DataHoraInicio > DateTimeOffset.UtcNow &&
+                a.Status == StatusAgendamento.AGENDADO)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(a => a.PercentualComissaoMomento, taxaComissao),
+                ct);
+    }
+
     // Redistribui as sessões futuras a partir de novoInicio, como na criação:
     // a i-ésima sessão (na ordem atual) fica em novoInicio + i * intervaloSemanas semanas
     private async Task<Result> AplicarReagendamentoSerieAsync(

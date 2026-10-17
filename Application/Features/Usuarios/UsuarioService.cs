@@ -7,7 +7,7 @@ using Clinica.Domain.Enums;
 
 namespace Clinica.Application.Features.Usuarios;
 
-public class UsuarioService(IUsuarioRepository repo, IUnitOfWork unitOfWork) : IUsuarioService
+public class UsuarioService(IUsuarioRepository repo, IAgendamentoRepository agendamentoRepository, IUnitOfWork unitOfWork) : IUsuarioService
 {
     public async Task<IEnumerable<Usuario>> ListarUsuariosAsync(CancellationToken ct)
     {
@@ -27,6 +27,7 @@ public class UsuarioService(IUsuarioRepository repo, IUnitOfWork unitOfWork) : I
             return usuarioResult.Error!;
         }
         var usuario = usuarioResult.Value!;
+        var deveAlterarProximasComissoes = (request.AlterarProximasComissoes ?? false) && request.TaxaComissaoPadrao.HasValue && (usuario.TaxaComissaoPadrao != request.TaxaComissaoPadrao);
         if (request.Nome is not null)
         {
             usuario.Nome = request.Nome;
@@ -52,6 +53,12 @@ public class UsuarioService(IUsuarioRepository repo, IUnitOfWork unitOfWork) : I
             usuario.ProfissionalRecebe = request.ProfissionalRecebe.Value;
         }
         await unitOfWork.CommitAsync();
+
+        if (deveAlterarProximasComissoes)
+        {
+            await agendamentoRepository.UpdateCommissionAsync(usuario.Id, usuario.TaxaComissaoPadrao, ct);
+        }
+
         return usuario;
     }
 

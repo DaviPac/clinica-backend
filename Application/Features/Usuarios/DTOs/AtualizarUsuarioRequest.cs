@@ -6,5 +6,6 @@ public record AtualizarUsuarioRequest(
     string? Role,
     string? Profissao,
     decimal? TaxaComissaoPadrao,
-    bool? ProfissionalRecebe
+    bool? ProfissionalRecebe,
+    bool? AlterarProximasComissoes
 );
