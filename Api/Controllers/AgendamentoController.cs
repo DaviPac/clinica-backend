@@ -33,8 +33,8 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
 
-        return StatusCode(201, result.Value!.Count == 1 ? 
-            AgendamentoToResponse(result.Value[0]) : 
+        return StatusCode(201, result.Value!.Count == 1 ?
+            AgendamentoToResponse(result.Value[0]) :
             AgendamentosToCriarAgendamentosResponse(result.Value));
     }
     [HttpGet]
@@ -162,7 +162,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
             result = await agendamentoService.CancelarRecorrenciaAsync(recorrenciaGroupId, ct);
         else
             result = await agendamentoService.CancelarRecorrenciaParaProfissionalAsync(recorrenciaGroupId, HttpContext.GetUserId(), ct);
-        
+
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
         return NoContent();
@@ -226,7 +226,7 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
     private static readonly TimeSpan FusoBrasilia = TimeSpan.FromHours(-3);
 
     private static AgendamentoResponse AgendamentoToResponse(Agendamento a)
-        => new(a.Id, a.PacienteId, a.ProfissionalId, a.ServicoId,
+        => new(a.Id, a.PacienteId, a.Paciente?.Nome, a.ProfissionalId, a.Profissional?.Nome, a.ServicoId, a.Servico?.Nome,
             a.DataHoraInicio.ToOffset(FusoBrasilia), a.DataHoraFim.ToOffset(FusoBrasilia), a.ValorCombinado, a.ValorPacote,
             a.PercentualComissaoMomento, a.Status.ToString(), a.PagoPeloPaciente,
             a.RecorrenciaGroupId, a.CriadoEm, a.ProfissionalRecebe);

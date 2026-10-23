@@ -55,7 +55,11 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
     }
     public async Task<Result<Agendamento>> FindByIdAsync(int id, CancellationToken ct = default)
     {
-        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.Id == id, ct);
+        var agendamento = await db.Agendamentos
+            .Include(a => a.Paciente)
+            .Include(a => a.Profissional)
+            .Include(a => a.Servico)
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
         if (agendamento is null)
             return Errors.ScheduleNotFound;
 
@@ -63,7 +67,11 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
     }
     public async Task<Result<Agendamento>> FindByIdForProfissionalAsync(int id, int profissionalId, CancellationToken ct = default)
     {
-        var agendamento = await db.Agendamentos.FirstOrDefaultAsync(a => a.Id == id && a.ProfissionalId == profissionalId, ct);
+        var agendamento = await db.Agendamentos
+            .Include(a => a.Paciente)
+            .Include(a => a.Profissional)
+            .Include(a => a.Servico)
+            .FirstOrDefaultAsync(a => a.Id == id && a.ProfissionalId == profissionalId, ct);
         if (agendamento is null)
             return Errors.ScheduleNotFound;
 
@@ -71,7 +79,12 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
     }
     public async Task<IReadOnlyList<Agendamento>> ListAsync(FiltroAgendamento filtro, CancellationToken ct = default)
     {
-        var query = db.Agendamentos.AsNoTracking().AsQueryable();
+        var query = db.Agendamentos
+            .AsNoTracking()
+            .Include(a => a.Paciente)
+            .Include(a => a.Profissional)
+            .Include(a => a.Servico)
+            .AsQueryable();
 
         if (filtro.ProfissionalId is int profId)
             query = query.Where(a => a.ProfissionalId == profId);
