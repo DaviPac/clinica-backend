@@ -2,6 +2,7 @@ using Clinica.Application.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Globalization;
+using System.Text.Json;
 using Clinica.Application.Interfaces;
 using Clinica.Application.Features.Agendamentos.DTOs;
 using Clinica.Domain.Enums;
@@ -192,6 +193,132 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
         return NoContent();
+    }
+
+    [HttpGet("{id}/prontuario")]
+    [Authorize]
+    public async Task<IActionResult> ObterProntuario(int id, CancellationToken ct)
+    {
+        var result = await agendamentoService.ObterProntuarioPorAgendamentoIdAsync(id, HttpContext.GetUserId(), ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return Ok(VersaoToResponse(result.Value!));
+    }
+
+    [HttpGet("{id}/prontuario/versoes")]
+    [Authorize]
+    public async Task<IActionResult> ListarVersoesProntuario(int id, CancellationToken ct)
+    {
+        var result = await agendamentoService.ListarVersoesProntuarioAsync(id, HttpContext.GetUserId(), ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return Ok(result.Value!.Select(v => new ProntuarioVersaoResumoResponse(v.Id, v.AutorId, v.NomeAutor, v.CriadoEm)));
+    }
+
+    [HttpGet("{id}/prontuario/versoes/{versaoId}")]
+    [Authorize]
+    public async Task<IActionResult> ObterVersaoProntuario(int id, int versaoId, CancellationToken ct)
+    {
+        var result = await agendamentoService.ObterVersaoProntuarioAsync(id, versaoId, HttpContext.GetUserId(), ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return Ok(VersaoToResponse(result.Value!));
+    }
+
+    [HttpPut("{id}/prontuario")]
+    [Authorize]
+    public async Task<IActionResult> AtualizarProntuario(
+        int id,
+        [FromBody] SalvarDocumentoRequest req,
+        CancellationToken ct
+    )
+    {
+        var result = await agendamentoService.AtualizarProntuarioPorAgendamentoIdAsync(req.Conteudo, id, HttpContext.GetUserId(), ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return NoContent();
+    }
+
+    [HttpPost("{id}/prontuario")]
+    [Authorize]
+    public async Task<IActionResult> CriarProntuario(
+        int id,
+        [FromBody] SalvarDocumentoRequest req,
+        CancellationToken ct
+    )
+    {
+        var result = await agendamentoService.CriarProntuarioPorAgendamentoIdAsync(req.Conteudo, id, HttpContext.GetUserId(), ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return StatusCode(201);
+    }
+
+    [HttpGet("{id}/anotacoes")]
+    [Authorize]
+    public async Task<IActionResult> ObterAnotacoes(int id, CancellationToken ct)
+    {
+        var result = await agendamentoService.ObterAnotacoesPorAgendamentoIdAsync(id, HttpContext.GetUserId(), ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return Ok(new DocumentoResponse(JsonSerializer.Deserialize<JsonElement>(result.Value!.Conteudo)));
+    }
+
+    [HttpPut("{id}/anotacoes")]
+    [Authorize]
+    public async Task<IActionResult> AtualizarAnotacoes(
+        int id,
+        [FromBody] SalvarDocumentoRequest req,
+        CancellationToken ct
+    )
+    {
+        var result = await agendamentoService.AtualizarAnotacoesPorAgendamentoIdAsync(req.Conteudo, id, HttpContext.GetUserId(), ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return NoContent();
+    }
+
+    [HttpPost("{id}/anotacoes")]
+    [Authorize]
+    public async Task<IActionResult> CriarAnotacoes(
+        int id,
+        [FromBody] SalvarDocumentoRequest req,
+        CancellationToken ct
+    )
+    {
+        var result = await agendamentoService.CriarAnotacoesPorAgendamentoIdAsync(req.Conteudo, id, HttpContext.GetUserId(), ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return StatusCode(201);
+    }
+
+    [HttpDelete("{id}/anotacoes")]
+    [Authorize]
+    public async Task<IActionResult> ExcluirAnotacoes(int id, CancellationToken ct)
+    {
+        var result = await agendamentoService.ExcluirAnotacoesPorAgendamentoIdAsync(id, HttpContext.GetUserId(), ct);
+
+        if (!result.IsSuccess)
+            return this.HandleError(result.Error!);
+        return NoContent();
+    }
+
+    private static ProntuarioVersaoResponse VersaoToResponse(ProntuarioVersao versao)
+    {
+        return new ProntuarioVersaoResponse(
+            versao.Id,
+            JsonSerializer.Deserialize<JsonElement>(versao.Conteudo),
+            versao.AutorId,
+            versao.Autor?.Nome,
+            versao.CriadoEm
+        );
     }
 
     private static (DateTimeOffset? De, DateTimeOffset? Ate) ParseFiltrosPeriodo(string? de, string? ate)

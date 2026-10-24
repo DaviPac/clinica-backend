@@ -47,6 +47,8 @@ builder.Services.AddScoped<IServicoRepository, ServicoRepository>();
 builder.Services.AddScoped<IServicoService, ServicoService>();
 builder.Services.AddScoped<IAgendamentoRepository, AgendamentoRepository>();
 builder.Services.AddScoped<IAgendamentoService, AgendamentoService>();
+builder.Services.AddScoped<IProntuarioRepository, ProntuarioRepository>();
+builder.Services.AddScoped<IAnotacoesAgendamentoRepository, AnotacoesAgendamentoRepository>();
 builder.Services.AddScoped<IDespesaClinicaRepository, DespesaClinicaRepository>();
 builder.Services.AddScoped<IDespesaClinicaService, DespesaClinicaService>();
 builder.Services.AddScoped<IAcertoComissaoRepository, AcertoComissaoRepository>();
