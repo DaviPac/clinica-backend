@@ -21,4 +21,6 @@ public class Agendamento
     public string? RecorrenciaGroupId { get; set; }
     public DateTime CriadoEm { get; set; }
     public bool ProfissionalRecebe { get; set; }
+    public Prontuario? Prontuario { get; set; }
+    public AnotacoesAgendamento? Anotacoes { get; set; }
 }

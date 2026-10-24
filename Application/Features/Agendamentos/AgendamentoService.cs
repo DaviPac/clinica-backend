@@ -4,20 +4,24 @@ using Clinica.Application.Interfaces;
 using Clinica.Domain.Entities;
 using Clinica.Domain.Enums;
 using Clinica.Domain.Filters;
+using Clinica.Domain.ReadModels;
 using Clinica.Domain.Repositories;
+using System.Text.Json;
 
 namespace Clinica.Application.Features.Agendamentos;
 
-public class AgendamentoService(IAgendamentoRepository agendamentoRepository, IUsuarioRepository usuarioRepository) : IAgendamentoService
+public class AgendamentoService(
+    IAgendamentoRepository agendamentoRepository, IUsuarioRepository usuarioRepository,
+    IProntuarioRepository prontuarioRepository, IAnotacoesAgendamentoRepository anotacoesAgendamentoRepository) : IAgendamentoService
 {
     public async Task<Result<IReadOnlyList<Agendamento>>> CriarAsync(int profissionalId, CriarAgendamentoRequest req, CancellationToken ct = default)
     {
         if (req.DuracaoMinutos <= 0)
             return Errors.ValidationFailed("Duração deve ser maior que 0");
-        
+
         var dataHoraInicio = req.DataHoraInicio.ToUniversalTime();
         var fim = dataHoraInicio.AddMinutes(req.DuracaoMinutos);
-        
+
         if (await agendamentoRepository.CheckConflictAsync(profissionalId, dataHoraInicio, fim, ct))
             return Errors.ConflictingSchedule;
 
@@ -57,14 +61,15 @@ public class AgendamentoService(IAgendamentoRepository agendamentoRepository, IU
 
         var groupId = Guid.NewGuid().ToString();
         var sessoesValores = new decimal[req.TotalSessoes];
-            
+
         decimal? valorPacote = null;
 
         if (req.Pacote)
         {
             valorPacote = req.ValorCombinado;
             sessoesValores[0] = req.ValorCombinado;
-        } else
+        }
+        else
         {
             for (int i = 0; i < req.TotalSessoes; i++)
                 sessoesValores[i] = req.ValorCombinado;
@@ -139,21 +144,21 @@ public class AgendamentoService(IAgendamentoRepository agendamentoRepository, IU
     {
         if (valorCombinado < 0)
             return Errors.ValidationFailed("Valor não pode ser abaixo de 0.");
-            
+
         return await agendamentoRepository.UpdateValorCombinadoForProfissionalAsync(id, profissionalId, valorCombinado, ct);
     }
     public async Task<Result<Agendamento>> AtualizarValorCombinadoRecorrenteAsync(int id, decimal valorCombinado, CancellationToken ct = default)
     {
         if (valorCombinado < 0)
             return Errors.ValidationFailed("Valor não pode ser abaixo de 0.");
-            
+
         return await agendamentoRepository.UpdateValorCombinadoRecorrenteAsync(id, valorCombinado, ct);
     }
     public async Task<Result<Agendamento>> AtualizarValorCombinadoRecorrenteParaProfissionalAsync(int id, int profissionalId, decimal valorCombinado, CancellationToken ct = default)
     {
         if (valorCombinado < 0)
             return Errors.ValidationFailed("Valor não pode ser abaixo de 0.");
-            
+
         return await agendamentoRepository.UpdateValorCombinadoRecorrenteForProfissionalAsync(id, profissionalId, valorCombinado, ct);
     }
     public async Task<Result> CancelarRecorrenciaAsync(string recorrenciaGroupId, CancellationToken ct = default)
@@ -198,4 +203,132 @@ public class AgendamentoService(IAgendamentoRepository agendamentoRepository, IU
 
         return await agendamentoRepository.RescheduleRecorrenciaForProfissionalAsync(id, profissionalId, novoInicio.ToUniversalTime(), novoFim.ToUniversalTime(), intervaloSemanas, ct);
     }
+    public async Task<Result<ProntuarioVersao>> ObterProntuarioPorAgendamentoIdAsync(int agendamentoId, int profissionalId, CancellationToken ct = default)
+    {
+        var agendamentoResult = await agendamentoRepository.FindByIdForProfissionalAsync(agendamentoId, profissionalId, ct);
+        if (!agendamentoResult.IsSuccess)
+        {
+            return agendamentoResult.Error!;
+        }
+        return await prontuarioRepository.GetVersaoAtualAsync(agendamentoId, ct);
+    }
+    public async Task<Result<IReadOnlyList<ProntuarioVersaoResumo>>> ListarVersoesProntuarioAsync(int agendamentoId, int profissionalId, CancellationToken ct = default)
+    {
+        var agendamentoResult = await agendamentoRepository.FindByIdForProfissionalAsync(agendamentoId, profissionalId, ct);
+        if (!agendamentoResult.IsSuccess)
+        {
+            return agendamentoResult.Error!;
+        }
+        var versoes = await prontuarioRepository.ListVersoesAsync(agendamentoId, ct);
+        if (versoes.Count == 0)
+        {
+            return Errors.MedicalRecordNotFound;
+        }
+        return versoes.ToList();
+    }
+    public async Task<Result<ProntuarioVersao>> ObterVersaoProntuarioAsync(int agendamentoId, int versaoId, int profissionalId, CancellationToken ct = default)
+    {
+        var agendamentoResult = await agendamentoRepository.FindByIdForProfissionalAsync(agendamentoId, profissionalId, ct);
+        if (!agendamentoResult.IsSuccess)
+        {
+            return agendamentoResult.Error!;
+        }
+        return await prontuarioRepository.GetVersaoAsync(agendamentoId, versaoId, ct);
+    }
+    public async Task<Result> CriarProntuarioPorAgendamentoIdAsync(JsonElement conteudo, int agendamentoId, int profissionalId, CancellationToken ct = default)
+    {
+        if (!IsDocumentoValido(conteudo))
+            return Errors.ValidationFailed("Conteúdo deve ser um documento JSON.");
+
+        var agendamentoResult = await agendamentoRepository.FindByIdForProfissionalAsync(agendamentoId, profissionalId, ct);
+        if (!agendamentoResult.IsSuccess)
+        {
+            return agendamentoResult.Error!;
+        }
+        if (await prontuarioRepository.ExistsByAgendamentoIdAsync(agendamentoId, ct))
+        {
+            return Errors.MedicalRecordAlreadyExists;
+        }
+        var novoProntuario = new Prontuario
+        {
+            AgendamentoId = agendamentoId,
+            Versoes =
+            [
+                new ProntuarioVersao
+                {
+                    Conteudo = conteudo.GetRawText(),
+                    AutorId = profissionalId
+                }
+            ]
+        };
+        await prontuarioRepository.CreateAsync(novoProntuario, ct);
+        return Result.Success();
+    }
+    public async Task<Result> AtualizarProntuarioPorAgendamentoIdAsync(JsonElement conteudo, int agendamentoId, int profissionalId, CancellationToken ct = default)
+    {
+        if (!IsDocumentoValido(conteudo))
+            return Errors.ValidationFailed("Conteúdo deve ser um documento JSON.");
+
+        var agendamentoResult = await agendamentoRepository.FindByIdForProfissionalAsync(agendamentoId, profissionalId, ct);
+        if (!agendamentoResult.IsSuccess)
+        {
+            return agendamentoResult.Error!;
+        }
+        return await prontuarioRepository.AddVersaoAsync(agendamentoId, conteudo.GetRawText(), profissionalId, ct);
+    }
+    public async Task<Result<AnotacoesAgendamento>> ObterAnotacoesPorAgendamentoIdAsync(int agendamentoId, int profissionalId, CancellationToken ct = default)
+    {
+        var agendamentoResult = await agendamentoRepository.FindByIdForProfissionalAsync(agendamentoId, profissionalId, ct);
+        if (!agendamentoResult.IsSuccess)
+        {
+            return agendamentoResult.Error!;
+        }
+        return await anotacoesAgendamentoRepository.GetByAgendamentoIdAsync(agendamentoId, ct);
+    }
+    public async Task<Result> CriarAnotacoesPorAgendamentoIdAsync(JsonElement conteudo, int agendamentoId, int profissionalId, CancellationToken ct = default)
+    {
+        if (!IsDocumentoValido(conteudo))
+            return Errors.ValidationFailed("Conteúdo deve ser um documento JSON.");
+
+        var agendamentoResult = await agendamentoRepository.FindByIdForProfissionalAsync(agendamentoId, profissionalId, ct);
+        if (!agendamentoResult.IsSuccess)
+        {
+            return agendamentoResult.Error!;
+        }
+        var existente = await anotacoesAgendamentoRepository.GetByAgendamentoIdAsync(agendamentoId, ct);
+        if (existente.IsSuccess)
+        {
+            return Errors.NotesAlreadyExist;
+        }
+        var novasAnotacoes = new AnotacoesAgendamento
+        {
+            AgendamentoId = agendamentoId,
+            Conteudo = conteudo.GetRawText()
+        };
+        await anotacoesAgendamentoRepository.CreateAsync(novasAnotacoes, ct);
+        return Result.Success();
+    }
+    public async Task<Result> AtualizarAnotacoesPorAgendamentoIdAsync(JsonElement conteudo, int agendamentoId, int profissionalId, CancellationToken ct = default)
+    {
+        if (!IsDocumentoValido(conteudo))
+            return Errors.ValidationFailed("Conteúdo deve ser um documento JSON.");
+
+        var agendamentoResult = await agendamentoRepository.FindByIdForProfissionalAsync(agendamentoId, profissionalId, ct);
+        if (!agendamentoResult.IsSuccess)
+        {
+            return agendamentoResult.Error!;
+        }
+        return await anotacoesAgendamentoRepository.UpdateAsync(conteudo.GetRawText(), agendamentoId, ct);
+    }
+    public async Task<Result> ExcluirAnotacoesPorAgendamentoIdAsync(int agendamentoId, int profissionalId, CancellationToken ct = default)
+    {
+        var agendamentoResult = await agendamentoRepository.FindByIdForProfissionalAsync(agendamentoId, profissionalId, ct);
+        if (!agendamentoResult.IsSuccess)
+        {
+            return agendamentoResult.Error!;
+        }
+        return await anotacoesAgendamentoRepository.DeleteAsync(agendamentoId, ct);
+    }
+    // Documentos do editor (TipTap) são sempre um objeto JSON na raiz
+    private static bool IsDocumentoValido(JsonElement conteudo) => conteudo.ValueKind == JsonValueKind.Object;
 }

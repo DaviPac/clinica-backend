@@ -12,6 +12,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Agendamento> Agendamentos => Set<Agendamento>();
     public DbSet<DespesaClinica> DespesasClinica => Set<DespesaClinica>();
     public DbSet<AcertoComissao> AcertosComissao => Set<AcertoComissao>();
+    public DbSet<Prontuario> Prontuarios => Set<Prontuario>();
+    public DbSet<ProntuarioVersao> ProntuarioVersoes => Set<ProntuarioVersao>();
+    public DbSet<AnotacoesAgendamento> AnotacoesAgendamentos => Set<AnotacoesAgendamento>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,6 +25,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         ModelAgendamentos(modelBuilder);
         ModelDespesasClinica(modelBuilder);
         ModelAcertosComissao(modelBuilder);
+        ModelProntuarios(modelBuilder);
+        ModelProntuarioVersoes(modelBuilder);
+        ModelAnotacoesAgendamento(modelBuilder);
     }
     private static void ModelUsuarios(ModelBuilder modelBuilder)
     {
@@ -334,6 +340,102 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(a => a.Profissional)
              .WithMany()
              .HasForeignKey(a => a.ProfissionalId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+    private static void ModelProntuarios(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Prontuario>(e =>
+        {
+            e.ToTable("prontuarios");
+
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Id)
+             .HasColumnName("id")
+             .UseSerialColumn();
+
+            e.Property(p => p.AgendamentoId)
+             .HasColumnName("agendamento_id");
+
+            e.Property(p => p.CriadoEm)
+             .HasColumnName("criado_em")
+             .HasDefaultValueSql("now()")
+             .ValueGeneratedOnAdd();
+
+            e.HasIndex(p => p.AgendamentoId)
+             .IsUnique();
+
+            e.HasOne(p => p.Agendamento)
+             .WithOne(a => a.Prontuario)
+             .HasForeignKey<Prontuario>(p => p.AgendamentoId)
+             .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+    private static void ModelProntuarioVersoes(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProntuarioVersao>(e =>
+        {
+            e.ToTable("prontuario_versoes");
+
+            e.HasKey(v => v.Id);
+            e.Property(v => v.Id)
+             .HasColumnName("id")
+             .UseSerialColumn();
+
+            e.Property(v => v.ProntuarioId)
+             .HasColumnName("prontuario_id");
+
+            e.Property(v => v.Conteudo)
+             .HasColumnName("conteudo")
+             .HasColumnType("jsonb")
+             .IsRequired();
+
+            e.Property(v => v.AutorId)
+             .HasColumnName("autor_id");
+
+            e.Property(v => v.CriadoEm)
+             .HasColumnName("criado_em")
+             .HasDefaultValueSql("now()")
+             .ValueGeneratedOnAdd();
+
+            e.HasIndex(v => v.ProntuarioId);
+
+            e.HasOne(v => v.Prontuario)
+             .WithMany(p => p.Versoes)
+             .HasForeignKey(v => v.ProntuarioId)
+             .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(v => v.Autor)
+             .WithMany()
+             .HasForeignKey(v => v.AutorId)
+             .OnDelete(DeleteBehavior.NoAction);
+        });
+    }
+    private static void ModelAnotacoesAgendamento(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AnotacoesAgendamento>(e =>
+        {
+            e.ToTable("anotacoes_agendamento");
+
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id)
+             .HasColumnName("id")
+             .UseSerialColumn();
+
+            e.Property(a => a.AgendamentoId)
+             .HasColumnName("agendamento_id");
+
+            e.Property(a => a.Conteudo)
+             .HasColumnName("conteudo")
+             .HasColumnType("jsonb")
+             .IsRequired();
+
+            e.HasIndex(a => a.AgendamentoId)
+             .IsUnique();
+
+            e.HasOne(a => a.Agendamento)
+             .WithOne(ag => ag.Anotacoes)
+             .HasForeignKey<AnotacoesAgendamento>(a => a.AgendamentoId)
              .OnDelete(DeleteBehavior.Cascade);
         });
     }
