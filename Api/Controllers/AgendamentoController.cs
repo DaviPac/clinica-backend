@@ -353,10 +353,25 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
     private static readonly TimeSpan FusoBrasilia = TimeSpan.FromHours(-3);
 
     private static AgendamentoResponse AgendamentoToResponse(Agendamento a)
-        => new(a.Id, a.PacienteId, a.Paciente?.Nome, a.ProfissionalId, a.Profissional?.Nome, a.ServicoId, a.Servico?.Nome,
-            a.DataHoraInicio.ToOffset(FusoBrasilia), a.DataHoraFim.ToOffset(FusoBrasilia), a.ValorCombinado, a.ValorPacote,
-            a.PercentualComissaoMomento, a.Status.ToString(), a.PagoPeloPaciente,
-            a.RecorrenciaGroupId, a.CriadoEm, a.ProfissionalRecebe);
+        => new(
+            Id: a.Id,
+            PacienteId: a.PacienteId,
+            Paciente: a.Paciente?.Nome,
+            ProfissionalId: a.ProfissionalId,
+            Profissional: a.Profissional?.Nome,
+            ServicoId: a.ServicoId,
+            Servico: a.Servico?.Nome,
+            DataHoraInicio: a.DataHoraInicio.ToOffset(FusoBrasilia),
+            DataHoraFim: a.DataHoraFim.ToOffset(FusoBrasilia),
+            ValorCombinado: a.ValorCombinado,
+            ValorPacote: a.ValorPacote,
+            PercentualComissaoMomento: a.PercentualComissaoMomento,
+            Status: a.Status.ToString(),
+            PagoPeloPaciente: a.PagoPeloPaciente,
+            RecorrenciaGroupId: a.RecorrenciaGroupId,
+            CriadoEm: a.CriadoEm,
+            ProfissionalRecebe: a.ProfissionalRecebe,
+            PossuiProntuario: a.Prontuario is not null);
 
     private static CriarAgendamentosResponse AgendamentosToCriarAgendamentosResponse(IEnumerable<Agendamento> ags)
         => new(ags.First().RecorrenciaGroupId!, ags.Count(), ags.Select(AgendamentoToResponse));
