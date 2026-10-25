@@ -59,6 +59,7 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
             .Include(a => a.Paciente)
             .Include(a => a.Profissional)
             .Include(a => a.Servico)
+            .Include(a => a.Prontuario)
             .FirstOrDefaultAsync(a => a.Id == id, ct);
         if (agendamento is null)
             return Errors.ScheduleNotFound;
@@ -71,6 +72,7 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
             .Include(a => a.Paciente)
             .Include(a => a.Profissional)
             .Include(a => a.Servico)
+            .Include(a => a.Prontuario)
             .FirstOrDefaultAsync(a => a.Id == id && a.ProfissionalId == profissionalId, ct);
         if (agendamento is null)
             return Errors.ScheduleNotFound;
@@ -84,6 +86,7 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
             .Include(a => a.Paciente)
             .Include(a => a.Profissional)
             .Include(a => a.Servico)
+            .Include(a => a.Prontuario)
             .AsQueryable();
 
         if (filtro.ProfissionalId is int profId)

@@ -17,5 +17,6 @@ public record AgendamentoResponse(
     bool PagoPeloPaciente,
     string? RecorrenciaGroupId,
     DateTime CriadoEm,
-    bool ProfissionalRecebe
+    bool ProfissionalRecebe,
+    bool PossuiProntuario
 );
