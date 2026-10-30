@@ -75,6 +75,11 @@ public class AgendamentoController(IAgendamentoService agendamentoService) : Con
                 filtroAg.PagamentoPendente = true;
                 break;
 
+            case "prontuario_pendente":
+                filtroAg.Status = StatusAgendamento.REALIZADO;
+                filtroAg.ProntuarioPendente = true;
+                break;
+
             default:
                 (filtroAg.De, filtroAg.Ate) = ParseFiltrosPeriodo(de, ate);
                 break;

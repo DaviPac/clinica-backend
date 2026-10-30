@@ -113,6 +113,9 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
         if (filtro.Ate is DateTimeOffset ate)
             query = query.Where(a => a.DataHoraInicio < ate);
 
+        if (filtro.ProntuarioPendente)
+            query = query.Where(a => a.Prontuario == null);
+
         return await query
             .OrderBy(a => a.DataHoraInicio)
             .ToListAsync(ct);
