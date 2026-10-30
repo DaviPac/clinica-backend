@@ -11,4 +11,5 @@ public class FiltroAgendamento
     public bool PagamentoPendente { get; set; }
     public DateTimeOffset? De { get; set; }
     public DateTimeOffset? Ate { get; set; }
+    public bool ProntuarioPendente { get; set; }
 }
