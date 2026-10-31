@@ -17,7 +17,7 @@ public class AuthController(IAuthService authService, IUsuarioService usuarioSer
     public async Task<IActionResult> Registrar([FromBody] RegistrarUsuarioRequest req, CancellationToken ct)
     {
         var result = await authService.RegistrarAsync(req, ct);
-        
+
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
 
@@ -50,10 +50,10 @@ public class AuthController(IAuthService authService, IUsuarioService usuarioSer
     [Authorize]
     public async Task<IActionResult> Me(CancellationToken ct)
     {
-        var id = HttpContext.GetUserId(); 
+        var id = HttpContext.GetUserId();
 
         var result = await usuarioService.ObterUsuarioPorIdAsync(id, ct);
-        
+
         if (!result.IsSuccess)
             return this.HandleError(result.Error!);
 
