@@ -28,5 +28,5 @@ public interface IAgendamentoRepository
     Task<Result> RescheduleForProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, CancellationToken ct = default);
     Task<Result> RescheduleRecorrenciaAsync(int id, DateTimeOffset novoInicio, DateTimeOffset novoFim, int intervaloSemanas, CancellationToken ct = default);
     Task<Result> RescheduleRecorrenciaForProfissionalAsync(int id, int profissionalId, DateTimeOffset novoInicio, DateTimeOffset novoFim, int intervaloSemanas, CancellationToken ct = default);
-    Task UpdateCommissionAsync(int profissionalId, decimal taxaComissao, CancellationToken ct = default);
+    Task UpdateCommissionAsync(int profissionalId, decimal taxaComissao, bool profissionalRecebe, CancellationToken ct = default);
 }

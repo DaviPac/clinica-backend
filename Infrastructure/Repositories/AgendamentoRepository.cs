@@ -414,14 +414,14 @@ public class AgendamentoRepository(AppDbContext db) : IAgendamentoRepository
         return await AplicarReagendamentoSerieAsync(profissionalId, movidos, novoInicio, novoFim, intervaloSemanas, ct);
     }
 
-    public async Task UpdateCommissionAsync(int profissionalId, decimal taxaComissao, CancellationToken ct = default)
+    public async Task UpdateCommissionAsync(int profissionalId, decimal taxaComissao, bool profissionalRecebe, CancellationToken ct = default)
     {
         await db.Agendamentos
             .Where(a => a.ProfissionalId == profissionalId &&
                 a.DataHoraInicio > DateTimeOffset.UtcNow &&
                 a.Status == StatusAgendamento.AGENDADO)
             .ExecuteUpdateAsync(
-                s => s.SetProperty(a => a.PercentualComissaoMomento, taxaComissao),
+                s => s.SetProperty(a => a.PercentualComissaoMomento, taxaComissao).SetProperty(a => a.ProfissionalRecebe, profissionalRecebe),
                 ct);
     }
 

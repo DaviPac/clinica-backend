@@ -27,7 +27,9 @@ public class UsuarioService(IUsuarioRepository repo, IAgendamentoRepository agen
             return usuarioResult.Error!;
         }
         var usuario = usuarioResult.Value!;
-        var deveAlterarProximasComissoes = (request.AlterarProximasComissoes ?? false) && request.TaxaComissaoPadrao.HasValue && (usuario.TaxaComissaoPadrao != request.TaxaComissaoPadrao);
+        var deveAlterarProximasComissoes =  (request.AlterarProximasComissoes ?? false) &&
+                                            ((request.TaxaComissaoPadrao.HasValue && (usuario.TaxaComissaoPadrao != request.TaxaComissaoPadrao)) ||
+                                            (request.ProfissionalRecebe.HasValue && (usuario.ProfissionalRecebe != request.ProfissionalRecebe)));
         if (request.Nome is not null)
         {
             usuario.Nome = request.Nome;
@@ -56,7 +58,7 @@ public class UsuarioService(IUsuarioRepository repo, IAgendamentoRepository agen
 
         if (deveAlterarProximasComissoes)
         {
-            await agendamentoRepository.UpdateCommissionAsync(usuario.Id, usuario.TaxaComissaoPadrao, ct);
+            await agendamentoRepository.UpdateCommissionAsync(usuario.Id, usuario.TaxaComissaoPadrao, usuario.ProfissionalRecebe, ct);
         }
 
         return usuario;
